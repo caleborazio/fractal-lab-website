@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Fractal Lab — AI Consulting, App Building & Storytelling | Portland, OR</title>
+  <meta name="description" content="Fractal Lab helps small businesses and nonprofits harness AI — through consulting, custom app building, and storytelling that connects. Based in Portland, OR.">
+
+  <!-- SEO -->
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://fractallab.co">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Fractal Lab — AI for Small Business & Nonprofits">
+  <meta property="og:description" content="AI feels overwhelming. We make it simple. Fractal Lab helps small businesses and nonprofits in Portland, OR harness AI with consulting, app building, and storytelling.">
+  <meta property="og:url" content="https://fractallab.co">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Fractal Lab">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Fractal Lab — AI for Small Business & Nonprofits">
+  <meta name="twitter:description" content="AI feels overwhelming. We make it simple. Portland, OR AI consulting, app building, and storytelling.">
+
+  <!-- Schema.org Local Business -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    "name": "Fractal Lab",
+    "description": "AI consulting, app building, and storytelling for small businesses and nonprofits.",
+    "url": "https://fractallab.co",
+    "telephone": "+19714045202",
+    "email": "caleborazio@gmail.com",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Portland",
+      "addressRegion": "OR",
+      "addressCountry": "US"
+    },
+    "areaServed": ["Portland, OR", "United States"],
+    "serviceType": ["AI Consulting", "App Development", "Brand Storytelling"]
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=DM+Serif+Display&display=swap" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --accent: #D85A30;
+      --accent-dark: #993C1D;
+      --accent-light: #FAECE7;
+      --accent-mid: #F0997B;
+      --text-primary: #1a1a18;
+      --text-secondary: #5a5a56;
+      --text-tertiary: #9a9a94;
+      --bg-primary: #ffffff;
+      --bg-secondary: #f7f6f2;
+      --border: rgba(0,0,0,0.08);
+      --font-sans: 'DM Sans', sans-serif;
+      --font-serif: 'DM Serif Display', serif;
+      --radius: 10px;
+      --radius-lg: 16px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-size: 16px;
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { text-decoration: none; color: inherit; }
+
+    .btn-primary {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      padding: 14px 32px;
+      border-radius: var(--radius);
+      font-size: 15px;
+      font-weight: 500;
+      font-family: var(--font-sans);
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s;
+    }
+    .btn-primary:hover { background: var(--accent-dark); transform: translateY(-1px); }
+
+    .btn-outline {
+      display: inline-block;
+      background: transparent;
+      color: var(--text-primary);
+      padding: 13px 32px;
+      border-radius: var(--radius);
+      font-size: 15px;
+      font-weight: 500;
+      font-family: var(--font-sans);
+      border: 1.5px solid rgba(0,0,0,0.2);
+      cursor: pointer;
+      transition: border-color 0.2s, transform 0.15s;
+    }
+    .btn-outline:hover { border-color: rgba(0,0,0,0.4); transform: translateY(-1px); }
+
+    /* NAV */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem 2rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-primary);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .logo {
+      font-family: var(--font-sans);
+      font-size: 19px;
+      font-weight: 500;
+      letter-spacing: -0.03em;
+      color: var(--text-primary);
+    }
+    .logo span { color: var(--accent); }
+    .nav-cta {
+      background: var(--accent);
+      color: #fff;
+      padding: 9px 22px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 500;
+      font-family: var(--font-sans);
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .nav-cta:hover { background: var(--accent-dark); }
+
+    /* HERO */
+    .hero {
+      padding: 6rem 2rem 5rem;
+      max-width: 700px;
+      margin: 0 auto;
+      text-align: center;
+    }
+    .hero-tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent-dark);
+      background: var(--accent-light);
+      padding: 5px 14px;
+      border-radius: 100px;
+      margin-bottom: 1.75rem;
+    }
+    .hero h1 {
+      font-family: var(--font-serif);
+      font-size: 56px;
+      font-weight: 400;
+      line-height: 1.08;
+      letter-spacing: -0.01em;
+      color: var(--text-primary);
+      margin-bottom: 1.25rem;
+    }
+    .hero h1 em {
+      font-style: italic;
+      color: var(--accent);
+    }
+    .hero p {
+      font-size: 18px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      max-width: 520px;
+      margin: 0 auto 2.5rem;
+    }
+    .hero-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+    hr.divider { border: none; border-top: 1px solid var(--border); }
+
+    /* SECTIONS */
+    .section-label {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+      margin-bottom: 0.5rem;
+    }
+    .section-title {
+      font-family: var(--font-serif);
+      font-size: 34px;
+      font-weight: 400;
+      letter-spacing: -0.01em;
+      color: var(--text-primary);
+      line-height: 1.15;
+      margin-bottom: 1rem;
+    }
+    .section-body {
+      font-size: 16px;
+      color: var(--text-secondary);
+      line-height: 1.75;
+      max-width: 560px;
+    }
+    .section-inner { max-width: 740px; margin: 0 auto; }
+
+    /* PROBLEM */
+    .problem {
+      padding: 5rem 2rem;
+      background: var(--bg-secondary);
+    }
+    .pain-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 16px;
+      margin-top: 2.5rem;
+    }
+    .pain-card {
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+    }
+    .pain-icon {
+      font-size: 24px;
+      margin-bottom: 0.75rem;
+    }
+    .pain-card p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.65;
+    }
+
+    /* GUIDE */
+    .guide { padding: 5rem 2rem; }
+    .guide-inner {
+      max-width: 740px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: center;
+    }
+    .guide-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--accent-light);
+      color: var(--accent-dark);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 5px 14px;
+      border-radius: 100px;
+      margin-bottom: 1rem;
+    }
+    .credibility {
+      margin-top: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .cred-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+    .cred-check {
+      width: 18px;
+      height: 18px;
+      background: var(--accent-light);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+      color: var(--accent);
+      font-size: 11px;
+    }
+    .guide-quote {
+      background: var(--bg-secondary);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+      padding: 1.75rem;
+      font-family: var(--font-serif);
+      font-size: 17px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+    }
+    .guide-quote strong {
+      display: block;
+      font-family: var(--font-sans);
+      font-size: 15px;
+      color: var(--text-primary);
+      font-weight: 500;
+      margin-bottom: 0.75rem;
+    }
+
+    /* PLAN */
+    .plan {
+      padding: 5rem 2rem;
+      background: var(--bg-secondary);
+    }
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      margin-top: 2.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      background: var(--bg-primary);
+    }
+    .step {
+      padding: 1.75rem;
+      border-right: 1px solid var(--border);
+    }
+    .step:last-child { border-right: none; }
+    .step-num {
+      font-family: var(--font-serif);
+      font-size: 42px;
+      font-weight: 400;
+      color: var(--accent-mid);
+      line-height: 1;
+      margin-bottom: 0.75rem;
+    }
+    .step h3 {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 0.5rem;
+    }
+    .step p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.65;
+    }
+
+    /* SERVICES */
+    .services { padding: 5rem 2rem; }
+    .svc-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 16px;
+      margin-top: 2.5rem;
+    }
+    .svc-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.75rem;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .svc-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.06); }
+    .svc-icon {
+      width: 44px;
+      height: 44px;
+      background: var(--accent-light);
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      margin-bottom: 1.1rem;
+    }
+    .svc-card h3 {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 0.5rem;
+    }
+    .svc-card p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.65;
+    }
+
+    /* STAKES */
+    .stakes {
+      padding: 5rem 2rem;
+      background: var(--bg-secondary);
+    }
+    .stakes-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 2.5rem;
+    }
+    .stakes-card {
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.75rem;
+    }
+    .stakes-card h3 {
+      font-size: 15px;
+      font-weight: 500;
+      margin-bottom: 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .dot-good { width: 10px; height: 10px; border-radius: 50%; background: #639922; flex-shrink: 0; }
+    .dot-bad { width: 10px; height: 10px; border-radius: 50%; background: #A32D2D; flex-shrink: 0; }
+    .stakes-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .stakes-list li {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .tick-good { color: #639922; font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+    .tick-bad { color: #A32D2D; font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+
+    /* CTA */
+    .cta {
+      padding: 6rem 2rem;
+      text-align: center;
+    }
+    .cta h2 {
+      font-family: var(--font-serif);
+      font-size: 40px;
+      font-weight: 400;
+      letter-spacing: -0.01em;
+      line-height: 1.15;
+      margin-bottom: 1rem;
+      color: var(--text-primary);
+    }
+    .cta p {
+      font-size: 17px;
+      color: var(--text-secondary);
+      margin: 0 auto 2rem;
+      max-width: 440px;
+      line-height: 1.7;
+    }
+    .cta-sub {
+      font-size: 13px;
+      color: var(--text-tertiary);
+      margin-top: 1rem;
+    }
+
+    /* CONTACT BAR */
+    .contact-bar {
+      padding: 2.5rem 2rem;
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border);
+    }
+    .contact-inner {
+      max-width: 740px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+    }
+    .contact-items {
+      display: flex;
+      gap: 2rem;
+      flex-wrap: wrap;
+    }
+    .contact-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+    .contact-item span.icon { font-size: 16px; color: var(--accent); }
+
+    /* FOOTER */
+    footer {
+      padding: 1.25rem 2rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    footer p { font-size: 12px; color: var(--text-tertiary); }
+
+    /* RESPONSIVE */
+    @media (max-width: 640px) {
+      .hero h1 { font-size: 38px; }
+      .section-title { font-size: 26px; }
+      .guide-inner { grid-template-columns: 1fr; gap: 2rem; }
+      .stakes-grid { grid-template-columns: 1fr; }
+      .step { border-right: none; border-bottom: 1px solid var(--border); }
+      .step:last-child { border-bottom: none; }
+      nav { padding: 1rem 1.25rem; }
+      .hero { padding: 4rem 1.25rem 3.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="logo">Fractal<span>Lab</span></div>
+    <a href="mailto:caleborazio@gmail.com" class="nav-cta">Book a free call</a>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-tag">Portland, OR &middot; AI for small business</div>
+    <h1>AI feels overwhelming.<br><em>We make it simple.</em></h1>
+    <p>You've heard AI can transform your business — but where do you even start? Fractal Lab is your guide. We turn confusion into clarity, and ideas into tools that work.</p>
+    <div class="hero-btns">
+      <a href="mailto:caleborazio@gmail.com" class="btn-primary">Book a free consultation</a>
+      <a href="#how-it-works" class="btn-outline">See how it works</a>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <section class="problem">
+    <div class="section-inner">
+      <p class="section-label">The problem</p>
+      <h2 class="section-title">You know AI matters.<br>You just don't know where to start.</h2>
+      <p class="section-body">Every week there's a new tool, a new buzzword, a new reason to feel behind. Most small businesses and nonprofits don't have time to sort through it all — and the big agencies charge big-agency prices.</p>
+      <div class="pain-grid">
+        <div class="pain-card">
+          <div class="pain-icon">🌀</div>
+          <p>Too many tools, too little clarity on what's actually useful for your work</p>
+        </div>
+        <div class="pain-card">
+          <div class="pain-icon">⏱</div>
+          <p>No time to experiment — you're already wearing ten hats as it is</p>
+        </div>
+        <div class="pain-card">
+          <div class="pain-icon">💸</div>
+          <p>Enterprise AI solutions built for Fortune 500 budgets, not yours</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="guide">
+    <div class="guide-inner">
+      <div>
+        <div class="guide-badge">✦ Your guide</div>
+        <h2 class="section-title">We've navigated this.<br>We'll guide you through it.</h2>
+        <p class="section-body">Fractal Lab was built for exactly this moment — when AI is changing everything but the roadmap isn't clear. We've done the work so you don't have to start from scratch.</p>
+        <div class="credibility">
+          <div class="cred-item"><div class="cred-check">✓</div>Deep experience with AI tools, workflows, and strategy</div>
+          <div class="cred-item"><div class="cred-check">✓</div>Specialists in small business and nonprofit contexts</div>
+          <div class="cred-item"><div class="cred-check">✓</div>Plain language — no jargon, no tech overwhelm</div>
+          <div class="cred-item"><div class="cred-check">✓</div>Based in Portland, OR — local roots, national reach</div>
+        </div>
+      </div>
+      <div class="guide-quote">
+        <strong>"We don't just hand you a tool and walk away."</strong>
+        We work alongside you to understand your goals, your constraints, and your story — then build something that actually fits your world.
+      </div>
+    </div>
+  </section>
+
+  <section class="plan" id="how-it-works">
+    <div class="section-inner">
+      <p class="section-label">The plan</p>
+      <h2 class="section-title">Three steps to clarity</h2>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">01</div>
+          <h3>We listen</h3>
+          <p>A free consultation to understand your business, your challenges, and where AI could genuinely help.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <h3>We build a plan</h3>
+          <p>A clear, jargon-free roadmap tailored to your goals — not a generic strategy copied from a template.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <h3>We get to work</h3>
+          <p>Consulting, custom tools, or storytelling — whatever your business needs to move forward with confidence.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="services">
+    <div class="section-inner">
+      <p class="section-label">What we do</p>
+      <h2 class="section-title">How Fractal Lab helps</h2>
+      <div class="svc-grid">
+        <div class="svc-card">
+          <div class="svc-icon">🧠</div>
+          <h3>AI consulting</h3>
+          <p>Honest, practical strategy for where AI fits in your workflow — and where it doesn't.</p>
+        </div>
+        <div class="svc-card">
+          <div class="svc-icon">📱</div>
+          <h3>App building</h3>
+          <p>Custom AI-powered tools built around your real needs, not off-the-shelf software that almost fits.</p>
+        </div>
+        <div class="svc-card">
+          <div class="svc-icon">✍️</div>
+          <h3>Storytelling</h3>
+          <p>Your brand voice, your message, your story — told in a way that connects with the people you serve.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="stakes">
+    <div class="section-inner">
+      <p class="section-label">What's at stake</p>
+      <h2 class="section-title">The difference a good guide makes</h2>
+      <div class="stakes-grid">
+        <div class="stakes-card">
+          <h3><div class="dot-good"></div> With Fractal Lab</h3>
+          <ul class="stakes-list">
+            <li><span class="tick-good">✓</span>Clarity on exactly how AI can help your business</li>
+            <li><span class="tick-good">✓</span>Tools that save you time every single week</li>
+            <li><span class="tick-good">✓</span>A story that resonates with your audience</li>
+            <li><span class="tick-good">✓</span>Confidence that you're not getting left behind</li>
+          </ul>
+        </div>
+        <div class="stakes-card">
+          <h3><div class="dot-bad"></div> Without a guide</h3>
+          <ul class="stakes-list">
+            <li><span class="tick-bad">✗</span>Wasted hours on tools that don't fit your needs</li>
+            <li><span class="tick-bad">✗</span>Competitors pulling ahead while you're still researching</li>
+            <li><span class="tick-bad">✗</span>Expensive agency retainers for generic strategy</li>
+            <li><span class="tick-bad">✗</span>The nagging feeling you're missing something big</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta">
+    <p class="section-label" style="text-align:center">Ready to start?</p>
+    <h2>You don't have to figure<br>this out alone.</h2>
+    <p>Book a free 30-minute call. We'll listen, ask the right questions, and tell you honestly what we think AI can do for you.</p>
+    <a href="mailto:caleborazio@gmail.com" class="btn-primary" style="font-size:16px;padding:16px 44px">Book a free consultation</a>
+    <p class="cta-sub">No commitment. No jargon. Just a real conversation.</p>
+  </section>
+
+  <section class="contact-bar">
+    <div class="contact-inner">
+      <div class="logo">Fractal<span style="color:var(--accent)">Lab</span></div>
+      <div class="contact-items">
+        <div class="contact-item"><span class="icon">📞</span><a href="tel:+19714045202">(971) 404-5202</a></div>
+        <div class="contact-item"><span class="icon">✉️</span><a href="mailto:caleborazio@gmail.com">caleborazio@gmail.com</a></div>
+        <div class="contact-item"><span class="icon">📍</span>Portland, OR</div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>© 2026 Fractal Lab &middot; fractallab.co</p>
+    <p>AI consulting &middot; App building &middot; Storytelling</p>
+  </footer>
+
+</body>
+</html>
