@@ -313,7 +313,7 @@
           </div>
         </div>
         <form class="contact-form reveal d1"
-              action="https://formspree.io/f/YOUR_FORM_ID"
+              action="https://fractal-lab-contact.caleborazio.workers.dev/"
               method="POST">
           <div class="form-row">
             <div class="field">
@@ -367,6 +367,26 @@
       }, { threshold: 0.12 });
       els.forEach(el => io.observe(el));
     } else { els.forEach(el => el.classList.add('in')); }
+
+    const form = document.querySelector('.contact-form');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = form.querySelector('button[type="submit"]');
+      btn.textContent = 'Sending…';
+      btn.disabled = true;
+      try {
+        const res = await fetch(form.action, { method: 'POST', body: new FormData(form) });
+        if (res.ok) {
+          form.innerHTML = '<p style="color:var(--accent-hi);font-size:17px;padding:2rem 0;">✓ Message sent! We\'ll be in touch within one business day.</p>';
+        } else {
+          throw new Error('Failed');
+        }
+      } catch {
+        btn.textContent = 'Send message →';
+        btn.disabled = false;
+        alert('Something went wrong — please try again or call us directly.');
+      }
+    });
   </script>
 
 </body>
