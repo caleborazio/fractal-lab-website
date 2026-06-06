@@ -305,10 +305,11 @@
           <div>
             <div class="mono label">Get in touch</div>
             <h2 class="title" style="font-size:clamp(28px,3.6vw,42px);">Let's talk about your work.</h2>
-            <p style="margin-top:1rem; font-size:16px; color:var(--text-2);">Fill out the form and we'll get back to you within one business day.</p>
+            <p style="margin-top:1rem; font-size:16px; color:var(--text-2);">Fill out the form and we'll get back to you as soon as we can.</p>
           </div>
           <div class="ci">
             <a href="tel:+19714045202"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-3 2a12 12 0 005 5l2-3 5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2z"/></svg>(971) 404-5202</a>
+            <a href="mailto:hello@fractallab.co"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>hello@fractallab.co</a>
             <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6-7-11a7 7 0 0114 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>Portland, OR</span>
           </div>
         </div>
@@ -345,7 +346,7 @@
           </div>
           <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
             <button type="submit" class="btn btn-fill">Send message <span class="arrow">&rarr;</span></button>
-            <p class="form-note">No commitment. We'll reply within one business day.</p>
+            <p class="form-note">No commitment. We'll reply as soon as we can.</p>
           </div>
         </form>
       </div>
@@ -377,7 +378,7 @@
       try {
         const res = await fetch(form.action, { method: 'POST', body: new FormData(form) });
         if (res.ok) {
-          form.innerHTML = '<p style="color:var(--accent-hi);font-size:17px;padding:2rem 0;">✓ Message sent! We\'ll be in touch within one business day.</p>';
+          form.innerHTML = '<p style="color:var(--accent-hi);font-size:17px;padding:2rem 0;">✓ Message sent! We\'ll be in touch soon.</p>';
         } else {
           throw new Error('Failed');
         }
