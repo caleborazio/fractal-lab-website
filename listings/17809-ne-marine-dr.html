@@ -109,7 +109,7 @@
   </header>
 
   <div class="wrap">
-    <img class="hero-photo" id="heroPhoto" src="marine-dr-photos/exterior.jpg" alt="Front exterior of the floating home" data-room="exterior">
+    <img class="hero-photo" id="heroPhoto" src="marine-dr-photos/exterior.jpg" alt="Front exterior of the floating home">
 
     <div class="listing-head">
       <div>
@@ -148,21 +148,30 @@
     </section>
 
     <section class="pad">
-      <h2>Photos — or just ask the voice assistant</h2>
+      <h2>Highlights — or just ask the voice assistant</h2>
       <div class="gallery" id="gallery">
-        <button data-room="exterior"><img src="marine-dr-photos/exterior.jpg" alt="Exterior"><span class="cap">Exterior</span></button>
-        <button data-room="exterior-water"><img src="marine-dr-photos/exterior-water.jpg" alt="Exterior, water level"><span class="cap">Boat well level</span></button>
-        <button data-room="aerial"><img src="marine-dr-photos/aerial.jpg" alt="Aerial community view"><span class="cap">Aerial / community</span></button>
-        <button data-room="living-room"><img src="marine-dr-photos/living-room.jpg" alt="Living room"><span class="cap">Living room</span></button>
-        <button data-room="dining-room"><img src="marine-dr-photos/dining-room.jpg" alt="Dining room"><span class="cap">Dining room</span></button>
-        <button data-room="kitchen"><img src="marine-dr-photos/kitchen.jpg" alt="Kitchen"><span class="cap">Kitchen</span></button>
-        <button data-room="deck"><img src="marine-dr-photos/deck.jpg" alt="Deck"><span class="cap">Deck &amp; river view</span></button>
-        <button data-room="primary-bedroom"><img src="marine-dr-photos/primary-bedroom.jpg" alt="Primary bedroom"><span class="cap">Primary bedroom</span></button>
-        <button data-room="primary-bathroom"><img src="marine-dr-photos/primary-bathroom.jpg" alt="Primary bathroom"><span class="cap">Primary bathroom</span></button>
-        <button data-room="guest-bedroom"><img src="marine-dr-photos/guest-bedroom.jpg" alt="Guest bedroom"><span class="cap">Guest bedroom</span></button>
-        <button data-room="murphy-bed-room"><img src="marine-dr-photos/murphy-bed-room.jpg" alt="Murphy bed room"><span class="cap">Murphy bed room</span></button>
-        <button data-room="boat-well"><img src="marine-dr-photos/boat-well.jpg" alt="Boat well"><span class="cap">Boat well</span></button>
+        <button data-src="marine-dr-photos/exterior.jpg" data-label="Exterior"><img src="marine-dr-photos/exterior.jpg" alt="Exterior"><span class="cap">Exterior</span></button>
+        <button data-src="marine-dr-photos/exterior-water.jpg" data-label="Boat well level"><img src="marine-dr-photos/exterior-water.jpg" alt="Exterior, water level"><span class="cap">Boat well level</span></button>
+        <button data-src="marine-dr-photos/community-dock.jpg" data-label="Community dock"><img src="marine-dr-photos/community-dock.jpg" alt="Community dock"><span class="cap">Community dock</span></button>
+        <button data-src="marine-dr-photos/aerial.jpg" data-label="Aerial / community"><img src="marine-dr-photos/aerial.jpg" alt="Aerial community view"><span class="cap">Aerial / community</span></button>
+        <button data-src="marine-dr-photos/living-room.jpg" data-label="Living room"><img src="marine-dr-photos/living-room.jpg" alt="Living room"><span class="cap">Living room</span></button>
+        <button data-src="marine-dr-photos/dining-room.jpg" data-label="Dining room"><img src="marine-dr-photos/dining-room.jpg" alt="Dining room"><span class="cap">Dining room</span></button>
+        <button data-src="marine-dr-photos/kitchen.jpg" data-label="Kitchen"><img src="marine-dr-photos/kitchen.jpg" alt="Kitchen"><span class="cap">Kitchen</span></button>
+        <button data-src="marine-dr-photos/deck.jpg" data-label="Deck & river view"><img src="marine-dr-photos/deck.jpg" alt="Deck"><span class="cap">Deck &amp; river view</span></button>
+        <button data-src="marine-dr-photos/primary-bedroom.jpg" data-label="Primary bedroom"><img src="marine-dr-photos/primary-bedroom.jpg" alt="Primary bedroom"><span class="cap">Primary bedroom</span></button>
+        <button data-src="marine-dr-photos/primary-bathroom.jpg" data-label="Primary bathroom"><img src="marine-dr-photos/primary-bathroom.jpg" alt="Primary bathroom"><span class="cap">Primary bathroom</span></button>
+        <button data-src="marine-dr-photos/primary-bathroom-vanity.jpg" data-label="Primary bath vanity"><img src="marine-dr-photos/primary-bathroom-vanity.jpg" alt="Primary bathroom vanity"><span class="cap">Primary bath vanity</span></button>
+        <button data-src="marine-dr-photos/guest-bedroom.jpg" data-label="Guest bedroom"><img src="marine-dr-photos/guest-bedroom.jpg" alt="Guest bedroom"><span class="cap">Guest bedroom</span></button>
+        <button data-src="marine-dr-photos/murphy-bed-room.jpg" data-label="Murphy bed room"><img src="marine-dr-photos/murphy-bed-room.jpg" alt="Murphy bed room"><span class="cap">Murphy bed room</span></button>
+        <button data-src="marine-dr-photos/murphy-bed-closed.jpg" data-label="Murphy bed, closed"><img src="marine-dr-photos/murphy-bed-closed.jpg" alt="Murphy bed room, closed"><span class="cap">Murphy bed, closed</span></button>
+        <button data-src="marine-dr-photos/boat-well.jpg" data-label="Boat well"><img src="marine-dr-photos/boat-well.jpg" alt="Boat well"><span class="cap">Boat well</span></button>
+        <button data-src="marine-dr-photos/floor-plan.jpg" data-label="Floor plan"><img src="marine-dr-photos/floor-plan.jpg" alt="Floor plan"><span class="cap">Floor plan</span></button>
       </div>
+    </section>
+
+    <section class="pad">
+      <h2>All photos (47)</h2>
+      <div class="gallery" id="fullGallery"></div>
     </section>
 
     <section class="pad hoa-schools">
@@ -209,20 +218,32 @@
       let conversation = null;
       let busy = false;
 
-      const ROOM_LABELS = {
-        'exterior': 'Exterior', 'exterior-water': 'Boat well level', 'aerial': 'Aerial / community',
-        'living-room': 'Living room', 'dining-room': 'Dining room', 'kitchen': 'Kitchen',
-        'deck': 'Deck & river view', 'primary-bedroom': 'Primary bedroom', 'primary-bathroom': 'Primary bathroom',
-        'guest-bedroom': 'Guest bedroom', 'murphy-bed-room': 'Murphy bed room', 'boat-well': 'Boat well',
+      // Maps the voice agent's named room keys to actual highlight photo files.
+      const ROOM_FILES = {
+        'exterior': ['marine-dr-photos/exterior.jpg', 'Exterior'],
+        'exterior-water': ['marine-dr-photos/exterior-water.jpg', 'Boat well level'],
+        'community-dock': ['marine-dr-photos/community-dock.jpg', 'Community dock'],
+        'aerial': ['marine-dr-photos/aerial.jpg', 'Aerial / community'],
+        'living-room': ['marine-dr-photos/living-room.jpg', 'Living room'],
+        'dining-room': ['marine-dr-photos/dining-room.jpg', 'Dining room'],
+        'kitchen': ['marine-dr-photos/kitchen.jpg', 'Kitchen'],
+        'deck': ['marine-dr-photos/deck.jpg', 'Deck & river view'],
+        'primary-bedroom': ['marine-dr-photos/primary-bedroom.jpg', 'Primary bedroom'],
+        'primary-bathroom': ['marine-dr-photos/primary-bathroom.jpg', 'Primary bathroom'],
+        'primary-bathroom-vanity': ['marine-dr-photos/primary-bathroom-vanity.jpg', 'Primary bath vanity'],
+        'guest-bedroom': ['marine-dr-photos/guest-bedroom.jpg', 'Guest bedroom'],
+        'murphy-bed-room': ['marine-dr-photos/murphy-bed-room.jpg', 'Murphy bed room'],
+        'murphy-bed-closed': ['marine-dr-photos/murphy-bed-closed.jpg', 'Murphy bed, closed'],
+        'boat-well': ['marine-dr-photos/boat-well.jpg', 'Boat well'],
+        'floor-plan': ['marine-dr-photos/floor-plan.jpg', 'Floor plan'],
       };
 
       const lightbox = document.getElementById('lightbox');
       const lightboxImg = document.getElementById('lightboxImg');
       const lightboxCap = document.getElementById('lightboxCap');
 
-      function openPhoto(room) {
-        const label = ROOM_LABELS[room] || room;
-        lightboxImg.src = `marine-dr-photos/${room}.jpg`;
+      function openPhoto(src, label) {
+        lightboxImg.src = src;
         lightboxImg.alt = label;
         lightboxCap.textContent = label;
         lightbox.classList.add('show');
@@ -233,10 +254,21 @@
       lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
 
       document.getElementById('gallery').addEventListener('click', (e) => {
-        const btnEl = e.target.closest('button[data-room]');
-        if (btnEl) openPhoto(btnEl.dataset.room);
+        const btnEl = e.target.closest('button[data-src]');
+        if (btnEl) openPhoto(btnEl.dataset.src, btnEl.dataset.label);
       });
-      document.getElementById('heroPhoto').addEventListener('click', (e) => openPhoto(e.target.dataset.room));
+      document.getElementById('heroPhoto').addEventListener('click', (e) => openPhoto(e.target.src, e.target.alt));
+
+      // Populate the full 47-photo archive.
+      const fullGallery = document.getElementById('fullGallery');
+      for (let i = 1; i <= 47; i++) {
+        const src = `marine-dr-photos/full/photo-${i}.jpg`;
+        const label = `Photo ${i}`;
+        const b = document.createElement('button');
+        b.innerHTML = `<img src="${src}" alt="${label}" loading="lazy"><span class="cap">${label}</span>`;
+        b.addEventListener('click', () => openPhoto(src, label));
+        fullGallery.appendChild(b);
+      }
 
       function setStatus(text) {
         if (!text) { status.classList.remove('show'); return; }
@@ -270,11 +302,12 @@
             agentId: AGENT_ID,
             clientTools: {
               show_photo: async ({ room }) => {
-                if (!ROOM_LABELS[room]) {
+                const entry = ROOM_FILES[room];
+                if (!entry) {
                   return { success: false, message: 'Unknown room key.' };
                 }
-                openPhoto(room);
-                return { success: true, message: `Now showing the ${ROOM_LABELS[room]} photo on the visitor's screen.` };
+                openPhoto(entry[0], entry[1]);
+                return { success: true, message: `Now showing the ${entry[1]} photo on the visitor's screen.` };
               },
             },
             onConnect: () => {
