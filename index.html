@@ -455,6 +455,31 @@
         try {
           conversation = await ElevenLabsClient.Conversation.startSession({
             agentId: AGENT_ID,
+            clientTools: {
+              book_call: async ({ name, email, organization, interest, message }) => {
+                try {
+                  const fd = new FormData();
+                  fd.set('name', name || '');
+                  fd.set('email', email || '');
+                  fd.set('organization', organization || '');
+                  fd.set('interest', interest || '');
+                  fd.set('message', message || '');
+
+                  const res = await fetch('https://fractal-lab-contact.caleborazio.workers.dev/', {
+                    method: 'POST',
+                    body: fd,
+                  });
+
+                  if (!res.ok) throw new Error('Request failed: ' + res.status);
+
+                  setStatus('Request sent ✓');
+                  return { success: true, message: 'The request was submitted. The Fractal Lab team will follow up by email to schedule.' };
+                } catch (err) {
+                  console.error('book_call failed:', err);
+                  return { success: false, message: 'The submission failed. Ask the visitor to use the contact form directly or call (971) 404-5202.' };
+                }
+              },
+            },
             onConnect: () => {
               setState('active');
               setStatus('Listening…');
