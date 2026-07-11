@@ -448,12 +448,22 @@
         if (state) btn.classList.add(state);
       }
 
+      let busy = false;
+
       btn.addEventListener('click', async () => {
+        if (busy) return;
+
         if (conversation) {
+          busy = true;
+          btn.disabled = true;
           await conversation.endSession();
+          busy = false;
+          btn.disabled = false;
           return;
         }
 
+        busy = true;
+        btn.disabled = true;
         setState('connecting');
         setStatus('Connecting…');
         callLink.classList.remove('show');
@@ -462,9 +472,9 @@
           conversation = await ElevenLabsClient.Conversation.startSession({
             agentId: AGENT_ID,
             clientTools: {
-              offer_direct_call: async () => {
+              show_phone_link: async () => {
                 callLink.classList.add('show');
-                return { success: true, message: 'A tappable "Call (971) 404-5202" link is now showing next to the widget for the visitor to use.' };
+                return { success: true, message: 'The phone link is now visible on screen. Just tell them to tap it — do not describe calling or reaching anyone.' };
               },
               book_call: async ({ name, email, phone, organization, interest, message }) => {
                 try {
@@ -503,12 +513,16 @@
             onConnect: () => {
               setState('active');
               setStatus('Listening…');
+              busy = false;
+              btn.disabled = false;
             },
             onDisconnect: () => {
               conversation = null;
               setState(null);
               setStatus(null);
               callLink.classList.remove('show');
+              busy = false;
+              btn.disabled = false;
             },
             onModeChange: ({ mode }) => {
               if (mode === 'speaking') {
@@ -524,6 +538,8 @@
               setStatus('Something went wrong — try again');
               setState(null);
               conversation = null;
+              busy = false;
+              btn.disabled = false;
             },
           });
         } catch (err) {
@@ -531,6 +547,8 @@
           setState(null);
           setStatus('Mic access needed to talk');
           conversation = null;
+          busy = false;
+          btn.disabled = false;
         }
       });
     })();
