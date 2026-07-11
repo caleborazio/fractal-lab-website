@@ -56,6 +56,10 @@
     .gallery img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .2s ease; }
     .gallery button:hover img { transform: scale(1.05); }
     .gallery .cap { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.7)); color: #fff; font-size: 11px; font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.05em; padding: 6px 8px 5px; text-align: left; }
+    .cat-section { margin-top: 1.75rem; }
+    .cat-section:first-child { margin-top: 0; }
+    .cat-section h3 { font-size: 15px; font-weight: 600; margin-bottom: 0.6rem; display: flex; align-items: baseline; gap: 8px; }
+    .cat-section h3 .count { font-family: var(--mono); font-size: 11px; color: var(--text-3); font-weight: 400; }
 
     .hoa-schools { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
     .hoa-schools h3 { font-size: 15px; margin-bottom: 0.6rem; color: var(--text-2); }
@@ -109,7 +113,7 @@
   </header>
 
   <div class="wrap">
-    <img class="hero-photo" id="heroPhoto" src="marine-dr-photos/exterior.jpg" alt="Front exterior of the floating home">
+    <img class="hero-photo" id="heroPhoto" src="marine-dr-photos/full/photo-1.jpg?v=2" alt="Front exterior of the floating home">
 
     <div class="listing-head">
       <div>
@@ -148,30 +152,9 @@
     </section>
 
     <section class="pad">
-      <h2>Highlights — or just ask the voice assistant</h2>
-      <div class="gallery" id="gallery">
-        <button data-src="marine-dr-photos/exterior.jpg" data-label="Exterior"><img src="marine-dr-photos/exterior.jpg" alt="Exterior"><span class="cap">Exterior</span></button>
-        <button data-src="marine-dr-photos/exterior-water.jpg" data-label="Boat well level"><img src="marine-dr-photos/exterior-water.jpg" alt="Exterior, water level"><span class="cap">Boat well level</span></button>
-        <button data-src="marine-dr-photos/community-dock.jpg" data-label="Community dock"><img src="marine-dr-photos/community-dock.jpg" alt="Community dock"><span class="cap">Community dock</span></button>
-        <button data-src="marine-dr-photos/aerial.jpg" data-label="Aerial / community"><img src="marine-dr-photos/aerial.jpg" alt="Aerial community view"><span class="cap">Aerial / community</span></button>
-        <button data-src="marine-dr-photos/living-room.jpg" data-label="Living room"><img src="marine-dr-photos/living-room.jpg" alt="Living room"><span class="cap">Living room</span></button>
-        <button data-src="marine-dr-photos/dining-room.jpg" data-label="Dining room"><img src="marine-dr-photos/dining-room.jpg" alt="Dining room"><span class="cap">Dining room</span></button>
-        <button data-src="marine-dr-photos/kitchen.jpg" data-label="Kitchen"><img src="marine-dr-photos/kitchen.jpg" alt="Kitchen"><span class="cap">Kitchen</span></button>
-        <button data-src="marine-dr-photos/deck.jpg" data-label="Deck & river view"><img src="marine-dr-photos/deck.jpg" alt="Deck"><span class="cap">Deck &amp; river view</span></button>
-        <button data-src="marine-dr-photos/primary-bedroom.jpg" data-label="Primary bedroom"><img src="marine-dr-photos/primary-bedroom.jpg" alt="Primary bedroom"><span class="cap">Primary bedroom</span></button>
-        <button data-src="marine-dr-photos/primary-bathroom.jpg" data-label="Primary bathroom"><img src="marine-dr-photos/primary-bathroom.jpg" alt="Primary bathroom"><span class="cap">Primary bathroom</span></button>
-        <button data-src="marine-dr-photos/primary-bathroom-vanity.jpg" data-label="Primary bath vanity"><img src="marine-dr-photos/primary-bathroom-vanity.jpg" alt="Primary bathroom vanity"><span class="cap">Primary bath vanity</span></button>
-        <button data-src="marine-dr-photos/guest-bedroom.jpg" data-label="Guest bedroom"><img src="marine-dr-photos/guest-bedroom.jpg" alt="Guest bedroom"><span class="cap">Guest bedroom</span></button>
-        <button data-src="marine-dr-photos/murphy-bed-room.jpg" data-label="Murphy bed room"><img src="marine-dr-photos/murphy-bed-room.jpg" alt="Murphy bed room"><span class="cap">Murphy bed room</span></button>
-        <button data-src="marine-dr-photos/murphy-bed-closed.jpg" data-label="Murphy bed, closed"><img src="marine-dr-photos/murphy-bed-closed.jpg" alt="Murphy bed room, closed"><span class="cap">Murphy bed, closed</span></button>
-        <button data-src="marine-dr-photos/boat-well.jpg" data-label="Boat well"><img src="marine-dr-photos/boat-well.jpg" alt="Boat well"><span class="cap">Boat well</span></button>
-        <button data-src="marine-dr-photos/floor-plan.jpg" data-label="Floor plan"><img src="marine-dr-photos/floor-plan.jpg" alt="Floor plan"><span class="cap">Floor plan</span></button>
-      </div>
-    </section>
-
-    <section class="pad">
-      <h2>All photos (47)</h2>
-      <div class="gallery" id="fullGallery"></div>
+      <h2>Photos — or just ask the voice assistant</h2>
+      <p class="desc" style="margin-bottom:0.5rem;">Grouped by room/topic, same as the assistant sees them — click any category to browse it, or ask the assistant about a topic and it'll pull from the same set.</p>
+      <div id="categorySections"></div>
     </section>
 
     <section class="pad hoa-schools">
@@ -218,25 +201,26 @@
       let conversation = null;
       let busy = false;
 
-      // Maps the voice agent's named room keys to actual highlight photo files.
-      const ROOM_FILES = {
-        'exterior': ['marine-dr-photos/exterior.jpg', 'Exterior'],
-        'exterior-water': ['marine-dr-photos/exterior-water.jpg', 'Boat well level'],
-        'community-dock': ['marine-dr-photos/community-dock.jpg', 'Community dock'],
-        'aerial': ['marine-dr-photos/aerial.jpg', 'Aerial / community'],
-        'living-room': ['marine-dr-photos/living-room.jpg', 'Living room'],
-        'dining-room': ['marine-dr-photos/dining-room.jpg', 'Dining room'],
-        'kitchen': ['marine-dr-photos/kitchen.jpg', 'Kitchen'],
-        'deck': ['marine-dr-photos/deck.jpg', 'Deck & river view'],
-        'primary-bedroom': ['marine-dr-photos/primary-bedroom.jpg', 'Primary bedroom'],
-        'primary-bathroom': ['marine-dr-photos/primary-bathroom.jpg', 'Primary bathroom'],
-        'primary-bathroom-vanity': ['marine-dr-photos/primary-bathroom-vanity.jpg', 'Primary bath vanity'],
-        'guest-bedroom': ['marine-dr-photos/guest-bedroom.jpg', 'Guest bedroom'],
-        'murphy-bed-room': ['marine-dr-photos/murphy-bed-room.jpg', 'Murphy bed room'],
-        'murphy-bed-closed': ['marine-dr-photos/murphy-bed-closed.jpg', 'Murphy bed, closed'],
-        'boat-well': ['marine-dr-photos/boat-well.jpg', 'Boat well'],
-        'floor-plan': ['marine-dr-photos/floor-plan.jpg', 'Floor plan'],
+      // Single source of truth: every photo tagged into a topic/category.
+      // Used both to render the on-page gallery (grouped by category) and
+      // for the voice agent's show_photos tool -- same grouping either way.
+      const PHOTO_VERSION = 2; // bump to cache-bust when photos change
+      const PHOTO_CATEGORIES = {
+        'exterior': { label: 'Exterior', photos: [1, 2, 33, 37, 40, 42, 43, 44] },
+        'community-views': { label: 'River Views & Community', photos: [4, 32, 34, 35, 36, 38, 39, 41] },
+        'deck': { label: 'Decks & Outdoor Living', photos: [3, 8, 9] },
+        'living-room': { label: 'Living Room', photos: [5, 6, 7, 11, 15] },
+        'kitchen-dining': { label: 'Kitchen & Dining', photos: [10, 12, 13, 14, 16, 17, 18] },
+        'primary-suite': { label: 'Primary Suite', photos: [19, 20, 21, 22] },
+        'guest-bed-bath': { label: 'Guest Bedroom & Bath', photos: [23, 24] },
+        'murphy-room': { label: 'Murphy Bed Flex Room', photos: [25, 26, 27] },
+        'office': { label: 'Office / 4th Bedroom', photos: [28] },
+        'laundry': { label: 'Laundry Room', photos: [29] },
+        'boat-well': { label: 'Boat Well & Garage', photos: [30, 31] },
+        'floor-plan': { label: 'Floor Plan', photos: [45, 46, 47] },
       };
+
+      function photoSrc(n) { return `marine-dr-photos/full/photo-${n}.jpg?v=${PHOTO_VERSION}`; }
 
       const lightbox = document.getElementById('lightbox');
       const lightboxImg = document.getElementById('lightboxImg');
@@ -250,17 +234,18 @@
       }
       function closeLightbox() { lightbox.classList.remove('show'); }
 
-      // The agent generates a whole narration (with several show_photo calls
-      // in it) as one burst of text, way faster than the audio actually plays
-      // out — so tool-call events arrive far ahead of the speech about them.
-      // Queue photo changes from the agent and pace them out with a minimum
-      // dwell time instead of flipping through them as fast as calls arrive.
-      const MIN_PHOTO_DWELL_MS = 4500;
+      // A whole tool call's worth of photos can arrive at the client in a
+      // burst (LLM text generation is faster than the audio that narrates
+      // it), so queue them and pace them out with a minimum dwell time
+      // rather than flipping through them as fast as calls arrive. Now that
+      // each show_photos call is scoped to one topic (not the whole tour),
+      // the queue only ever needs to cover 1-3 closely related photos.
+      const MIN_PHOTO_DWELL_MS = 3000;
       let photoQueue = [];
       let photoQueueTimer = null;
 
-      function queuePhoto(src, label) {
-        photoQueue.push([src, label]);
+      function queuePhotos(items) {
+        photoQueue.push(...items);
         if (photoQueueTimer === null) processPhotoQueue();
       }
       function processPhotoQueue() {
@@ -276,22 +261,24 @@
 
       document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
       lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
-
-      document.getElementById('gallery').addEventListener('click', (e) => {
-        const btnEl = e.target.closest('button[data-src]');
-        if (btnEl) openPhoto(btnEl.dataset.src, btnEl.dataset.label);
-      });
       document.getElementById('heroPhoto').addEventListener('click', (e) => openPhoto(e.target.src, e.target.alt));
 
-      // Populate the full 47-photo archive.
-      const fullGallery = document.getElementById('fullGallery');
-      for (let i = 1; i <= 47; i++) {
-        const src = `marine-dr-photos/full/photo-${i}.jpg`;
-        const label = `Photo ${i}`;
-        const b = document.createElement('button');
-        b.innerHTML = `<img src="${src}" alt="${label}" loading="lazy"><span class="cap">${label}</span>`;
-        b.addEventListener('click', () => openPhoto(src, label));
-        fullGallery.appendChild(b);
+      // Render the gallery grouped by category -- same grouping the agent uses.
+      const categorySections = document.getElementById('categorySections');
+      for (const [key, cat] of Object.entries(PHOTO_CATEGORIES)) {
+        const section = document.createElement('div');
+        section.className = 'cat-section';
+        section.innerHTML = `<h3>${cat.label} <span class="count">${cat.photos.length} photo${cat.photos.length > 1 ? 's' : ''}</span></h3><div class="gallery"></div>`;
+        const grid = section.querySelector('.gallery');
+        cat.photos.forEach((n) => {
+          const src = photoSrc(n);
+          const label = cat.label;
+          const b = document.createElement('button');
+          b.innerHTML = `<img src="${src}" alt="${label}" loading="lazy">`;
+          b.addEventListener('click', () => openPhoto(src, label));
+          grid.appendChild(b);
+        });
+        categorySections.appendChild(section);
       }
 
       function setStatus(text) {
@@ -326,13 +313,13 @@
           conversation = await ElevenLabsClient.Conversation.startSession({
             agentId: AGENT_ID,
             clientTools: {
-              show_photo: async ({ room }) => {
-                const entry = ROOM_FILES[room];
-                if (!entry) {
-                  return { success: false, message: 'Unknown room key.' };
+              show_photos: async ({ topic }) => {
+                const cat = PHOTO_CATEGORIES[topic];
+                if (!cat) {
+                  return { success: false, message: 'Unknown topic key.' };
                 }
-                queuePhoto(entry[0], entry[1]);
-                return { success: true, message: `Queued the ${entry[1]} photo to display shortly, paced to when you're actually talking about it.` };
+                queuePhotos(cat.photos.map((n) => [photoSrc(n), cat.label]));
+                return { success: true, message: `Queued ${cat.photos.length} ${cat.label} photo(s) to display over the next few seconds, paced to the conversation.` };
               },
             },
             onConnect: () => {
