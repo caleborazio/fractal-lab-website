@@ -456,14 +456,24 @@
           conversation = await ElevenLabsClient.Conversation.startSession({
             agentId: AGENT_ID,
             clientTools: {
-              book_call: async ({ name, email, organization, interest, message }) => {
+              book_call: async ({ name, email, phone, organization, interest, message }) => {
                 try {
+                  if (!email && !phone) {
+                    return { success: false, message: 'No email or phone was provided. Ask the visitor for at least one before calling book_call again.' };
+                  }
+
+                  // The visible contact form's Worker only has an "email" field, no
+                  // phone field, so a phone-only contact is also folded into the
+                  // message text to make sure it isn't silently dropped.
+                  let fullMessage = message || '';
+                  if (phone) fullMessage = `[Phone: ${phone}]${email ? '' : ' (no email given)'} ${fullMessage}`;
+
                   const fd = new FormData();
                   fd.set('name', name || '');
                   fd.set('email', email || '');
                   fd.set('organization', organization || '');
                   fd.set('interest', interest || '');
-                  fd.set('message', message || '');
+                  fd.set('message', fullMessage);
 
                   const res = await fetch('https://fractal-lab-contact.caleborazio.workers.dev/', {
                     method: 'POST',
@@ -473,7 +483,7 @@
                   if (!res.ok) throw new Error('Request failed: ' + res.status);
 
                   setStatus('Request sent ✓');
-                  return { success: true, message: 'The request was submitted. The Fractal Lab team will follow up by email to schedule.' };
+                  return { success: true, message: 'The request was submitted. The Fractal Lab team will follow up to schedule.' };
                 } catch (err) {
                   console.error('book_call failed:', err);
                   return { success: false, message: 'The submission failed. Ask the visitor to use the contact form directly or call (971) 404-5202.' };
