@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>17809 NE Marine Dr #C3 — Voice Agent Demo | Fractal Lab</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #13151B; --bg-2: #191C24; --bg-deep: #0E0F14;
+      --accent: #5B86FF; --accent-hi: #82A2FF; --accent-ink: #0C0E14; --accent-soft: rgba(91,134,255,0.12);
+      --text: #ECEFF5; --text-2: #A2A9B8; --text-3: #6E7585;
+      --border: rgba(255,255,255,0.10); --border-2: rgba(255,255,255,0.18);
+      --sans: 'Hanken Grotesk', system-ui, sans-serif; --mono: 'IBM Plex Mono', monospace;
+      --r: 8px; --r-lg: 14px; --maxw: 1040px;
+    }
+    body { font-family: var(--sans); background: var(--bg); color: var(--text); font-size: 17px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+    a { text-decoration: none; color: inherit; }
+    .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 2rem; }
+    .mono { font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+
+    .demo-banner { background: var(--accent-soft); border-bottom: 1px solid var(--border); padding: 10px 2rem; text-align: center; font-size: 13px; color: var(--accent-hi); }
+    .demo-banner a { text-decoration: underline; }
+
+    header.top { padding: 2rem 0 1rem; }
+    header.top .back { color: var(--text-3); font-size: 14px; }
+    header.top .back:hover { color: var(--accent-hi); }
+
+    .hero-photo { width: 100%; max-height: 520px; object-fit: cover; border-radius: var(--r-lg); border: 1px solid var(--border); margin-top: 1.25rem; cursor: pointer; }
+
+    .listing-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 2rem; margin-top: 1.75rem; flex-wrap: wrap; }
+    .listing-head h1 { font-size: clamp(24px, 3vw, 34px); font-weight: 600; letter-spacing: -0.02em; }
+    .listing-head .addr2 { color: var(--text-2); margin-top: 0.35rem; }
+    .price { font-size: clamp(28px, 3.4vw, 38px); font-weight: 600; color: var(--accent-hi); white-space: nowrap; }
+
+    .stat-row { display: flex; gap: 2rem; margin-top: 1.5rem; flex-wrap: wrap; padding: 1.25rem 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .stat .n { font-size: 22px; font-weight: 600; }
+    .stat .l { font-size: 12px; color: var(--text-3); font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px; }
+
+    section.pad { padding: 2.5rem 0; }
+    section.pad h2 { font-size: 20px; font-weight: 600; margin-bottom: 1rem; }
+    .desc { color: var(--text-2); max-width: 68ch; }
+
+    .features { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.6rem 1.5rem; margin-top: 0.5rem; }
+    .features li { list-style: none; color: var(--text-2); font-size: 15px; padding-left: 1.1rem; position: relative; }
+    .features li::before { content: '—'; position: absolute; left: 0; color: var(--accent); }
+
+    .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.75rem; margin-top: 0.5rem; }
+    .gallery button { border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; padding: 0; cursor: pointer; background: var(--bg-2); position: relative; aspect-ratio: 4/3; }
+    .gallery img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .2s ease; }
+    .gallery button:hover img { transform: scale(1.05); }
+    .gallery .cap { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.7)); color: #fff; font-size: 11px; font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.05em; padding: 6px 8px 5px; text-align: left; }
+
+    .hoa-schools { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+    .hoa-schools h3 { font-size: 15px; margin-bottom: 0.6rem; color: var(--text-2); }
+    .hoa-schools p, .hoa-schools li { color: var(--text-2); font-size: 15px; }
+    .hoa-schools ul { padding-left: 1.1rem; }
+    @media (max-width: 640px){ .hoa-schools { grid-template-columns: 1fr; } }
+
+    footer { border-top: 1px solid var(--border); padding: 2rem 0 3rem; margin-top: 1rem; }
+    footer p { color: var(--text-3); font-size: 13px; }
+
+    /* Lightbox */
+    .lightbox { position: fixed; inset: 0; background: rgba(10,11,15,0.92); z-index: 300; display: none; align-items: center; justify-content: center; padding: 2rem; }
+    .lightbox.show { display: flex; }
+    .lightbox img { max-width: min(1000px, 92vw); max-height: 82vh; border-radius: var(--r); object-fit: contain; }
+    .lightbox .cap { position: absolute; bottom: 2.5rem; left: 0; right: 0; text-align: center; color: var(--text-2); font-family: var(--mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
+    .lightbox .close { position: absolute; top: 1.5rem; right: 1.5rem; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border-2); background: var(--bg-2); color: var(--text); cursor: pointer; font-size: 18px; }
+
+    /* Voice widget (same pattern as main site) */
+    .voice-widget { position: fixed; right: 24px; bottom: 24px; z-index: 200; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+    .voice-status { font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--text-2); background: var(--bg-2); border: 1px solid var(--border-2); border-radius: 999px;
+      padding: 7px 14px; opacity: 0; transform: translateY(6px); transition: opacity .25s ease, transform .25s ease; pointer-events: none; white-space: nowrap; }
+    .voice-status.show { opacity: 1; transform: none; }
+    .voice-btn { width: 52px; height: 52px; border-radius: 50%; border: none; cursor: pointer;
+      background: var(--accent); color: var(--accent-ink); display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 6px 20px rgba(91,134,255,0.35); transition: transform .18s ease, background .2s ease, box-shadow .2s ease;
+      position: relative; }
+    .voice-btn:hover { background: var(--accent-hi); transform: translateY(-2px); }
+    .voice-btn svg { width: 22px; height: 22px; }
+    .voice-btn.active { background: var(--bg-2); color: var(--accent-hi); border: 1px solid var(--accent); box-shadow: none; }
+    .voice-btn.connecting { background: var(--bg-2); color: var(--text-2); border: 1px solid var(--border-2); box-shadow: none; }
+    .voice-btn .ring { position: absolute; inset: -6px; border-radius: 50%; border: 1.5px solid var(--accent); opacity: 0; }
+    .voice-btn.active .ring { animation: voice-pulse 1.8s ease-out infinite; }
+    .voice-btn.speaking .ring { animation: voice-pulse 1s ease-out infinite; }
+    .voice-btn.connecting .ring { border-color: var(--text-3); animation: voice-spin 1s linear infinite; opacity: .6; }
+    @keyframes voice-pulse { 0% { opacity: .55; transform: scale(0.9); } 100% { opacity: 0; transform: scale(1.35); } }
+    @keyframes voice-spin { 0% { transform: rotate(0deg); opacity: .3; } 50% { opacity: .7; } 100% { transform: rotate(360deg); opacity: .3; } }
+    .voice-icon-mic, .voice-icon-stop { position: absolute; transition: opacity .15s ease, transform .15s ease; }
+    .voice-btn:not(.active):not(.connecting) .voice-icon-stop { opacity: 0; transform: scale(.6); }
+    .voice-btn.active .voice-icon-mic, .voice-btn.connecting .voice-icon-mic { opacity: 0; transform: scale(.6); }
+    .voice-btn.active .voice-icon-stop { opacity: 1; transform: none; }
+    @media (max-width: 480px){ .voice-widget { right: 16px; bottom: 16px; } }
+  </style>
+</head>
+<body>
+
+  <div class="demo-banner">Prototype voice agent demo by <a href="/">Fractal Lab</a> — listing data/photos from a real, active MLS listing, used here for demonstration only.</div>
+
+  <header class="top wrap">
+    <a href="/" class="mono back">&larr; Fractal Lab</a>
+  </header>
+
+  <div class="wrap">
+    <img class="hero-photo" id="heroPhoto" src="marine-dr-photos/exterior.jpg" alt="Front exterior of the floating home" data-room="exterior">
+
+    <div class="listing-head">
+      <div>
+        <h1>17809 NE Marine Dr #C3</h1>
+        <div class="addr2">Portland, OR 97230 &middot; McGuire Point Marina</div>
+      </div>
+      <div class="price">$525,000</div>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat"><div class="n">4</div><div class="l">Beds</div></div>
+      <div class="stat"><div class="n">2.5</div><div class="l">Baths</div></div>
+      <div class="stat"><div class="n">2,040</div><div class="l">Sq Ft</div></div>
+      <div class="stat"><div class="n">2000</div><div class="l">Year Built</div></div>
+      <div class="stat"><div class="n">$495/mo</div><div class="l">HOA</div></div>
+    </div>
+
+    <section class="pad">
+      <h2>About this home</h2>
+      <p class="desc">This waterfront floating home in the McGuire Point Marina community features vaulted ceilings, expansive windows with river views, and a bright open living space. The kitchen includes updated quartz countertops and stainless steel appliances. Notable features include a murphy bed, a primary suite with a soaking tub, newer HVAC systems, and direct river access for kayaking and boating via a 19x24 boat well. The gated community offers private Columbia River trail access.</p>
+    </section>
+
+    <section class="pad">
+      <h2>Features</h2>
+      <ul class="features">
+        <li>Gas fireplace</li>
+        <li>Hardwood &amp; luxury vinyl plank flooring</li>
+        <li>Jetted soaking tub</li>
+        <li>Covered decks with wind-sensor awning</li>
+        <li>Boat slip ownership included</li>
+        <li>Gated community with security access</li>
+        <li>Metal roof</li>
+        <li>Central air conditioning</li>
+        <li>Gas heat &amp; water heater</li>
+      </ul>
+    </section>
+
+    <section class="pad">
+      <h2>Photos — or just ask the voice assistant</h2>
+      <div class="gallery" id="gallery">
+        <button data-room="exterior"><img src="marine-dr-photos/exterior.jpg" alt="Exterior"><span class="cap">Exterior</span></button>
+        <button data-room="exterior-water"><img src="marine-dr-photos/exterior-water.jpg" alt="Exterior, water level"><span class="cap">Boat well level</span></button>
+        <button data-room="aerial"><img src="marine-dr-photos/aerial.jpg" alt="Aerial community view"><span class="cap">Aerial / community</span></button>
+        <button data-room="living-room"><img src="marine-dr-photos/living-room.jpg" alt="Living room"><span class="cap">Living room</span></button>
+        <button data-room="dining-room"><img src="marine-dr-photos/dining-room.jpg" alt="Dining room"><span class="cap">Dining room</span></button>
+        <button data-room="kitchen"><img src="marine-dr-photos/kitchen.jpg" alt="Kitchen"><span class="cap">Kitchen</span></button>
+        <button data-room="deck"><img src="marine-dr-photos/deck.jpg" alt="Deck"><span class="cap">Deck &amp; river view</span></button>
+        <button data-room="primary-bedroom"><img src="marine-dr-photos/primary-bedroom.jpg" alt="Primary bedroom"><span class="cap">Primary bedroom</span></button>
+        <button data-room="primary-bathroom"><img src="marine-dr-photos/primary-bathroom.jpg" alt="Primary bathroom"><span class="cap">Primary bathroom</span></button>
+        <button data-room="guest-bedroom"><img src="marine-dr-photos/guest-bedroom.jpg" alt="Guest bedroom"><span class="cap">Guest bedroom</span></button>
+        <button data-room="murphy-bed-room"><img src="marine-dr-photos/murphy-bed-room.jpg" alt="Murphy bed room"><span class="cap">Murphy bed room</span></button>
+        <button data-room="boat-well"><img src="marine-dr-photos/boat-well.jpg" alt="Boat well"><span class="cap">Boat well</span></button>
+      </div>
+    </section>
+
+    <section class="pad hoa-schools">
+      <div>
+        <h3 class="mono">HOA</h3>
+        <p>$495/month — includes boat slip, gated community access, insurance, sewer, trash, and water.</p>
+      </div>
+      <div>
+        <h3 class="mono">Schools</h3>
+        <ul>
+          <li>Elementary: Wilkes</li>
+          <li>Junior High: H.B. Lee</li>
+          <li>High School: Reynolds</li>
+        </ul>
+      </div>
+    </section>
+  </div>
+
+  <footer class="wrap">
+    <p>Listing information courtesy of Portland Digs, (503) 239-7400. This page is an unlisted Fractal Lab prototype and is not an official listing site.</p>
+  </footer>
+
+  <div class="lightbox" id="lightbox">
+    <button class="close" id="lightboxClose" aria-label="Close">&times;</button>
+    <img id="lightboxImg" src="" alt="">
+    <div class="cap mono" id="lightboxCap"></div>
+  </div>
+
+  <div class="voice-widget">
+    <div class="voice-status mono" id="voiceStatus"></div>
+    <button class="voice-btn" id="voiceBtn" aria-label="Talk to the listing voice assistant">
+      <span class="ring"></span>
+      <svg class="voice-icon-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 00-3 3v6a3 3 0 006 0V5a3 3 0 00-3-3z"/><path d="M19 10v1a7 7 0 01-14 0v-1M12 18v3"/></svg>
+      <svg class="voice-icon-stop" viewBox="0 0 24 24" fill="currentColor"><rect x="7" y="7" width="10" height="10" rx="2"/></svg>
+    </button>
+  </div>
+
+  <script src="https://unpkg.com/@elevenlabs/client@1.15.0/dist/lib.iife.js"></script>
+  <script>
+    (function () {
+      const AGENT_ID = 'agent_2901kx7y4vd3fjjtnqpq886g26d0';
+      const btn = document.getElementById('voiceBtn');
+      const status = document.getElementById('voiceStatus');
+      let conversation = null;
+      let busy = false;
+
+      const ROOM_LABELS = {
+        'exterior': 'Exterior', 'exterior-water': 'Boat well level', 'aerial': 'Aerial / community',
+        'living-room': 'Living room', 'dining-room': 'Dining room', 'kitchen': 'Kitchen',
+        'deck': 'Deck & river view', 'primary-bedroom': 'Primary bedroom', 'primary-bathroom': 'Primary bathroom',
+        'guest-bedroom': 'Guest bedroom', 'murphy-bed-room': 'Murphy bed room', 'boat-well': 'Boat well',
+      };
+
+      const lightbox = document.getElementById('lightbox');
+      const lightboxImg = document.getElementById('lightboxImg');
+      const lightboxCap = document.getElementById('lightboxCap');
+
+      function openPhoto(room) {
+        const label = ROOM_LABELS[room] || room;
+        lightboxImg.src = `marine-dr-photos/${room}.jpg`;
+        lightboxImg.alt = label;
+        lightboxCap.textContent = label;
+        lightbox.classList.add('show');
+      }
+      function closeLightbox() { lightbox.classList.remove('show'); }
+
+      document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
+      lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
+
+      document.getElementById('gallery').addEventListener('click', (e) => {
+        const btnEl = e.target.closest('button[data-room]');
+        if (btnEl) openPhoto(btnEl.dataset.room);
+      });
+      document.getElementById('heroPhoto').addEventListener('click', (e) => openPhoto(e.target.dataset.room));
+
+      function setStatus(text) {
+        if (!text) { status.classList.remove('show'); return; }
+        status.textContent = text;
+        status.classList.add('show');
+      }
+      function setState(state) {
+        btn.classList.remove('active', 'connecting', 'speaking');
+        if (state) btn.classList.add(state);
+      }
+
+      btn.addEventListener('click', async () => {
+        if (busy) return;
+
+        if (conversation) {
+          busy = true;
+          btn.disabled = true;
+          await conversation.endSession();
+          busy = false;
+          btn.disabled = false;
+          return;
+        }
+
+        busy = true;
+        btn.disabled = true;
+        setState('connecting');
+        setStatus('Connecting…');
+
+        try {
+          conversation = await ElevenLabsClient.Conversation.startSession({
+            agentId: AGENT_ID,
+            clientTools: {
+              show_photo: async ({ room }) => {
+                if (!ROOM_LABELS[room]) {
+                  return { success: false, message: 'Unknown room key.' };
+                }
+                openPhoto(room);
+                return { success: true, message: `Now showing the ${ROOM_LABELS[room]} photo on the visitor's screen.` };
+              },
+            },
+            onConnect: () => {
+              setState('active');
+              setStatus('Listening…');
+              busy = false;
+              btn.disabled = false;
+            },
+            onDisconnect: () => {
+              conversation = null;
+              setState(null);
+              setStatus(null);
+              busy = false;
+              btn.disabled = false;
+            },
+            onModeChange: ({ mode }) => {
+              if (mode === 'speaking') {
+                setState('speaking');
+                setStatus('Speaking…');
+              } else {
+                setState('active');
+                setStatus('Listening…');
+              }
+            },
+            onError: (message) => {
+              console.error('Voice agent error:', message);
+              setStatus('Something went wrong — try again');
+              setState(null);
+              conversation = null;
+              busy = false;
+              btn.disabled = false;
+            },
+          });
+        } catch (err) {
+          console.error(err);
+          setState(null);
+          setStatus('Mic access needed to talk');
+          conversation = null;
+          busy = false;
+          btn.disabled = false;
+        }
+      });
+    })();
+  </script>
+
+</body>
+</html>
