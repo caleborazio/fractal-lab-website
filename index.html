@@ -5,27 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>Fractal Lab — Run Your Business, Not Your Busywork | Portland, OR</title>
-  <meta name="description" content="Fractal Lab builds small, simple systems that take busywork off your plate — so small businesses and nonprofits can do big things. Strategy, custom tools, and storytelling. Portland, OR.">
+  <meta name="description" content="Fractal Lab builds small, simple systems that take busywork off your plate — so small and mid-sized organizations can do big things. Strategy, custom tools, and storytelling. Portland, OR.">
 
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://fractallab.co">
 
   <meta property="og:title" content="Fractal Lab — Run Your Business, Not Your Busywork">
-  <meta property="og:description" content="Small, simple systems that take the repetitive work off your plate — so a small team can do big things. For small businesses and nonprofits in Portland, OR.">
+  <meta property="og:description" content="Small, simple systems that take the repetitive work off your plate — so a lean team can do big things. For small and mid-sized organizations in Portland, OR.">
   <meta property="og:url" content="https://fractallab.co">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Fractal Lab">
 
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Fractal Lab — Run Your Business, Not Your Busywork">
-  <meta name="twitter:description" content="Simple systems that take busywork off your plate, for small teams and nonprofits. Portland, OR.">
+  <meta name="twitter:description" content="Simple systems that take busywork off your plate, for small and mid-sized organizations. Portland, OR.">
 
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
     "name": "Fractal Lab",
-    "description": "We build simple tools and systems — including AI-powered ones — that save small businesses and nonprofits hours every week. Strategy, app building, and storytelling.",
+    "description": "We build simple tools and systems — including AI-powered ones — that save small and mid-sized organizations hours every week. Strategy, app building, and storytelling.",
     "url": "https://fractallab.co",
     "telephone": "+19714045202",
     "email": "caleborazio@gmail.com",
@@ -199,6 +199,9 @@
       color: var(--text-2); background: var(--bg-2); border: 1px solid var(--border-2); border-radius: 999px;
       padding: 7px 14px; opacity: 0; transform: translateY(6px); transition: opacity .25s ease, transform .25s ease; pointer-events: none; white-space: nowrap; }
     .voice-status.show { opacity: 1; transform: none; }
+    a.voice-status { color: var(--accent-hi); border-color: var(--accent); cursor: pointer; }
+    a.voice-status.show { pointer-events: auto; }
+    a.voice-status:hover { background: var(--accent-soft); }
     .voice-btn { width: 52px; height: 52px; border-radius: 50%; border: none; cursor: pointer;
       background: var(--accent); color: var(--accent-ink); display: flex; align-items: center; justify-content: center;
       box-shadow: 0 6px 20px rgba(91,134,255,0.35); transition: transform .18s ease, background .2s ease, box-shadow .2s ease;
@@ -244,12 +247,12 @@
       <div>
         <div class="mono eyebrow reveal in">Fractal Lab — Portland, OR</div>
         <h1 class="reveal in d1">Run your business,<br>not your busywork.</h1>
-        <p class="lede reveal in d2">We build small, simple systems that take the repetitive work off your plate — so a small team can do big things.</p>
+        <p class="lede reveal in d2">We build small, simple systems that take the repetitive work off your plate — so a lean team can do big things.</p>
         <div class="hero-btns reveal in d3">
           <a href="#contact" class="btn btn-fill">Book a free call <span class="arrow">&rarr;</span></a>
           <a href="#how" class="btn btn-ghost">How it works</a>
         </div>
-        <div class="trust reveal in d4"><span class="ln"></span> For small businesses &amp; nonprofits</div>
+        <div class="trust reveal in d4"><span class="ln"></span> For small and mid-sized organizations</div>
       </div>
       <div class="hero-art reveal in d2" aria-hidden="true">
         <svg class="sq" viewBox="0 0 240 240" fill="none">
@@ -316,7 +319,7 @@
     </div>
     <div class="wrap reveal">
       <div class="mono label" style="color:var(--accent-hi);">Ready to start?</div>
-      <h2>Do big things with a small team.</h2>
+      <h2>Do big things with a lean team.</h2>
       <p>Book a free 30-minute call. We'll listen, then tell you honestly what's worth doing.</p>
       <a href="#contact" class="btn btn-fill" style="font-size:16px; padding:15px 34px;">Book a free call <span class="arrow">&rarr;</span></a>
       <p class="sub">No commitment. No jargon. Just a real conversation.</p>
@@ -416,6 +419,7 @@
   </script>
 
   <div class="voice-widget">
+    <a class="voice-status mono" id="voiceCallLink" href="tel:+19714045202">Call (971) 404-5202 now &rarr;</a>
     <div class="voice-status mono" id="voiceStatus"></div>
     <button class="voice-btn" id="voiceBtn" aria-label="Talk to the Fractal Lab AI assistant">
       <span class="ring"></span>
@@ -430,6 +434,7 @@
       const AGENT_ID = 'agent_0001kx7p3s7de12rjr2rmtjmjzrg';
       const btn = document.getElementById('voiceBtn');
       const status = document.getElementById('voiceStatus');
+      const callLink = document.getElementById('voiceCallLink');
       let conversation = null;
 
       function setStatus(text) {
@@ -451,11 +456,16 @@
 
         setState('connecting');
         setStatus('Connecting…');
+        callLink.classList.remove('show');
 
         try {
           conversation = await ElevenLabsClient.Conversation.startSession({
             agentId: AGENT_ID,
             clientTools: {
+              offer_direct_call: async () => {
+                callLink.classList.add('show');
+                return { success: true, message: 'A tappable "Call (971) 404-5202" link is now showing next to the widget for the visitor to use.' };
+              },
               book_call: async ({ name, email, phone, organization, interest, message }) => {
                 try {
                   if (!email && !phone) {
@@ -498,6 +508,7 @@
               conversation = null;
               setState(null);
               setStatus(null);
+              callLink.classList.remove('show');
             },
             onModeChange: ({ mode }) => {
               if (mode === 'speaking') {
