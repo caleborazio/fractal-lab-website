@@ -250,6 +250,30 @@
       }
       function closeLightbox() { lightbox.classList.remove('show'); }
 
+      // The agent generates a whole narration (with several show_photo calls
+      // in it) as one burst of text, way faster than the audio actually plays
+      // out — so tool-call events arrive far ahead of the speech about them.
+      // Queue photo changes from the agent and pace them out with a minimum
+      // dwell time instead of flipping through them as fast as calls arrive.
+      const MIN_PHOTO_DWELL_MS = 4500;
+      let photoQueue = [];
+      let photoQueueTimer = null;
+
+      function queuePhoto(src, label) {
+        photoQueue.push([src, label]);
+        if (photoQueueTimer === null) processPhotoQueue();
+      }
+      function processPhotoQueue() {
+        if (photoQueue.length === 0) { photoQueueTimer = null; return; }
+        const [src, label] = photoQueue.shift();
+        openPhoto(src, label);
+        photoQueueTimer = setTimeout(processPhotoQueue, MIN_PHOTO_DWELL_MS);
+      }
+      function clearPhotoQueue() {
+        photoQueue = [];
+        if (photoQueueTimer !== null) { clearTimeout(photoQueueTimer); photoQueueTimer = null; }
+      }
+
       document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
       lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
 
@@ -296,6 +320,7 @@
         btn.disabled = true;
         setState('connecting');
         setStatus('Connecting…');
+        clearPhotoQueue();
 
         try {
           conversation = await ElevenLabsClient.Conversation.startSession({
@@ -306,8 +331,8 @@
                 if (!entry) {
                   return { success: false, message: 'Unknown room key.' };
                 }
-                openPhoto(entry[0], entry[1]);
-                return { success: true, message: `Now showing the ${entry[1]} photo on the visitor's screen.` };
+                queuePhoto(entry[0], entry[1]);
+                return { success: true, message: `Queued the ${entry[1]} photo to display shortly, paced to when you're actually talking about it.` };
               },
             },
             onConnect: () => {
@@ -322,6 +347,7 @@
               setStatus(null);
               busy = false;
               btn.disabled = false;
+              clearPhotoQueue();
             },
             onModeChange: ({ mode }) => {
               if (mode === 'speaking') {
