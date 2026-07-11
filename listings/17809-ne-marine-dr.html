@@ -201,24 +201,91 @@
       let conversation = null;
       let busy = false;
 
-      // Single source of truth: every photo tagged into a topic/category.
-      // Used both to render the on-page gallery (grouped by category) and
-      // for the voice agent's show_photos tool -- same grouping either way.
-      const PHOTO_VERSION = 2; // bump to cache-bust when photos change
+      // Single source of truth: every photo has its own unique id and a
+      // specific caption, grouped under a category only for on-page display.
+      // The agent picks ONE specific photo id per thing it says, instead of
+      // a whole category dumped at once -- that's what keeps the display in
+      // sync instead of backlogged.
+      const PHOTO_VERSION = 3; // bump to cache-bust when photos change
       const PHOTO_CATEGORIES = {
-        'exterior': { label: 'Exterior', photos: [1, 2, 33, 37, 40, 42, 43, 44] },
-        'community-views': { label: 'River Views & Community', photos: [4, 32, 34, 35, 36, 38, 39, 41] },
-        'deck': { label: 'Decks & Outdoor Living', photos: [3, 8, 9] },
-        'living-room': { label: 'Living Room', photos: [5, 6, 7, 11, 15] },
-        'kitchen-dining': { label: 'Kitchen & Dining', photos: [10, 12, 13, 14, 16, 17, 18] },
-        'primary-suite': { label: 'Primary Suite', photos: [19, 20, 21, 22] },
-        'guest-bed-bath': { label: 'Guest Bedroom & Bath', photos: [23, 24] },
-        'murphy-room': { label: 'Murphy Bed Flex Room', photos: [25, 26, 27] },
-        'office': { label: 'Office / 4th Bedroom', photos: [28] },
-        'laundry': { label: 'Laundry Room', photos: [29] },
-        'boat-well': { label: 'Boat Well & Garage', photos: [30, 31] },
-        'floor-plan': { label: 'Floor Plan', photos: [45, 46, 47] },
+        'exterior': { label: 'Exterior', photos: [
+          { id: 'exterior-front', n: 1, caption: 'Front view of the home from the water' },
+          { id: 'exterior-deck-side', n: 2, caption: 'Side view with the wrap-around upper deck and spiral stair' },
+          { id: 'exterior-front-flag', n: 44, caption: 'Front view with the American flag, garage level' },
+          { id: 'exterior-back-garage', n: 42, caption: 'Back of the home showing the boat well garage door' },
+          { id: 'exterior-side-porch', n: 40, caption: 'Side view with the ground-level covered porch' },
+          { id: 'exterior-dock-evening', n: 33, caption: 'View from the dock in late afternoon light' },
+          { id: 'exterior-dock-view-1', n: 37, caption: 'Another dockside exterior view' },
+          { id: 'exterior-dock-view-2', n: 43, caption: 'Additional exterior view from the marina' },
+        ]},
+        'community-views': { label: 'River Views & Community', photos: [
+          { id: 'aerial-mt-hood', n: 4, caption: 'Aerial view of the whole marina with Mt. Hood in the background' },
+          { id: 'aerial-property-pin', n: 36, caption: 'Aerial view marking this home\'s location in the marina' },
+          { id: 'community-dock-view', n: 32, caption: 'Neighboring floating homes seen from the covered deck' },
+          { id: 'community-walkway', n: 34, caption: 'The shared floating walkway connecting the homes' },
+          { id: 'community-dock-bridge', n: 38, caption: 'The dock and gangway bridge leading to the home' },
+          { id: 'community-view-1', n: 35, caption: 'Another community and river view' },
+          { id: 'community-view-2', n: 39, caption: 'Additional marina and community view' },
+          { id: 'community-view-3', n: 41, caption: 'Additional marina and community view' },
+        ]},
+        'deck': { label: 'Decks & Outdoor Living', photos: [
+          { id: 'deck-covered-dining', n: 8, caption: 'The covered deck seating area with river view' },
+          { id: 'deck-dining-table', n: 9, caption: 'Outdoor dining table on the deck overlooking the water' },
+          { id: 'deck-fall-colors', n: 3, caption: 'The deck in autumn with river and trees in the background' },
+        ]},
+        'living-room': { label: 'Living Room', photos: [
+          { id: 'living-room-fireplace', n: 6, caption: 'Living room with the gas fireplace and TV' },
+          { id: 'living-room-fireplace-alt', n: 7, caption: 'Another angle of the living room and fireplace' },
+          { id: 'living-room-open-dining', n: 5, caption: 'Living room open to the dining area, vaulted ceilings' },
+          { id: 'living-room-to-kitchen', n: 11, caption: 'Living room opening into the kitchen and dining bar' },
+          { id: 'reading-nook', n: 15, caption: 'A window reading nook with a chaise lounge and river view' },
+        ]},
+        'kitchen-dining': { label: 'Kitchen & Dining', photos: [
+          { id: 'kitchen-quartz-island', n: 16, caption: 'Kitchen with quartz counters, island seating, stainless appliances' },
+          { id: 'kitchen-cabinets', n: 17, caption: 'Kitchen cabinets, gas range, and dishwasher' },
+          { id: 'kitchen-full-view', n: 18, caption: 'Wide view of the kitchen opening to living and dining' },
+          { id: 'kitchen-open-concept', n: 10, caption: 'Kitchen visible from the living room, open concept' },
+          { id: 'dining-table', n: 13, caption: 'The dining table with a view of the neighboring homes' },
+          { id: 'dining-room-window', n: 14, caption: 'Dining room with an arched window and hardwood floors' },
+          { id: 'dining-bar-seating', n: 12, caption: 'The dining area and bar seating' },
+        ]},
+        'primary-suite': { label: 'Primary Suite', photos: [
+          { id: 'primary-bedroom', n: 20, caption: 'The primary bedroom with a dresser and TV' },
+          { id: 'primary-bedroom-alt', n: 19, caption: 'Another angle of the primary bedroom' },
+          { id: 'primary-bathroom-tub-shower', n: 21, caption: 'Primary bathroom with the soaking tub and separate shower' },
+          { id: 'primary-bathroom-vanity', n: 22, caption: 'Primary bathroom double vanity and mirror area' },
+        ]},
+        'guest-bed-bath': { label: 'Guest Bedroom & Bath', photos: [
+          { id: 'guest-bedroom-colorful', n: 23, caption: 'A secondary bedroom with colorful, personalized decor' },
+          { id: 'guest-bathroom', n: 24, caption: 'The guest bathroom with a shower and vanity' },
+        ]},
+        'murphy-room': { label: 'Murphy Bed Flex Room', photos: [
+          { id: 'murphy-bed-down', n: 25, caption: 'The murphy bed room with the bed pulled down, nautical decor' },
+          { id: 'murphy-bed-alt-angle', n: 27, caption: 'Another angle of the murphy bed room with the bed down' },
+          { id: 'murphy-bed-closed', n: 26, caption: 'The same room with the murphy bed folded away into cabinetry' },
+        ]},
+        'office': { label: 'Office / 4th Bedroom', photos: [
+          { id: 'office-music-room', n: 28, caption: 'A bedroom set up as an office and music room with a piano' },
+        ]},
+        'laundry': { label: 'Laundry Room', photos: [
+          { id: 'laundry-room', n: 29, caption: 'The laundry room with washer, dryer, and utility sink' },
+        ]},
+        'boat-well': { label: 'Boat Well & Garage', photos: [
+          { id: 'boat-well-interior', n: 30, caption: 'Inside the boat well with a boat parked in the private garage' },
+          { id: 'boat-well-storage', n: 31, caption: 'The boat well garage with storage and access to the water' },
+        ]},
+        'floor-plan': { label: 'Floor Plan', photos: [
+          { id: 'floor-plan-both-floors', n: 45, caption: 'Combined floor plan, both floors, with room dimensions' },
+          { id: 'floor-plan-first-floor', n: 47, caption: 'First floor plan with room dimensions' },
+          { id: 'floor-plan-second-floor', n: 46, caption: 'Second floor plan with room dimensions' },
+        ]},
       };
+
+      // Flat lookup: photo id -> { n, caption, category }
+      const PHOTOS_BY_ID = {};
+      for (const [catKey, cat] of Object.entries(PHOTO_CATEGORIES)) {
+        for (const p of cat.photos) PHOTOS_BY_ID[p.id] = { ...p, category: catKey };
+      }
 
       function photoSrc(n) { return `marine-dr-photos/full/photo-${n}.jpg?v=${PHOTO_VERSION}`; }
 
@@ -238,14 +305,15 @@
       // burst (LLM text generation is faster than the audio that narrates
       // it), so queue them and pace them out with a minimum dwell time
       // rather than flipping through them as fast as calls arrive. Now that
-      // each show_photos call is scoped to one topic (not the whole tour),
-      // the queue only ever needs to cover 1-3 closely related photos.
-      const MIN_PHOTO_DWELL_MS = 3000;
+      // the agent shows exactly one specific photo per call (not a whole
+      // category), a backlog should be rare -- but keep a small queue and a
+      // generous dwell so a photo is never yanked away the instant it appears.
+      const MIN_PHOTO_DWELL_MS = 5000;
       let photoQueue = [];
       let photoQueueTimer = null;
 
-      function queuePhotos(items) {
-        photoQueue.push(...items);
+      function queuePhoto(src, label) {
+        photoQueue.push([src, label]);
         if (photoQueueTimer === null) processPhotoQueue();
       }
       function processPhotoQueue() {
@@ -270,12 +338,11 @@
         section.className = 'cat-section';
         section.innerHTML = `<h3>${cat.label} <span class="count">${cat.photos.length} photo${cat.photos.length > 1 ? 's' : ''}</span></h3><div class="gallery"></div>`;
         const grid = section.querySelector('.gallery');
-        cat.photos.forEach((n) => {
-          const src = photoSrc(n);
-          const label = cat.label;
+        cat.photos.forEach((p) => {
+          const src = photoSrc(p.n);
           const b = document.createElement('button');
-          b.innerHTML = `<img src="${src}" alt="${label}" loading="lazy">`;
-          b.addEventListener('click', () => openPhoto(src, label));
+          b.innerHTML = `<img src="${src}" alt="${p.caption}" loading="lazy">`;
+          b.addEventListener('click', () => openPhoto(src, p.caption));
           grid.appendChild(b);
         });
         categorySections.appendChild(section);
@@ -313,13 +380,13 @@
           conversation = await ElevenLabsClient.Conversation.startSession({
             agentId: AGENT_ID,
             clientTools: {
-              show_photos: async ({ topic }) => {
-                const cat = PHOTO_CATEGORIES[topic];
-                if (!cat) {
-                  return { success: false, message: 'Unknown topic key.' };
+              show_photo: async ({ photo_id }) => {
+                const p = PHOTOS_BY_ID[photo_id];
+                if (!p) {
+                  return { success: false, message: 'Unknown photo_id.' };
                 }
-                queuePhotos(cat.photos.map((n) => [photoSrc(n), cat.label]));
-                return { success: true, message: `Queued ${cat.photos.length} ${cat.label} photo(s) to display over the next few seconds, paced to the conversation.` };
+                queuePhoto(photoSrc(p.n), p.caption);
+                return { success: true, message: `Showing: ${p.caption}` };
               },
             },
             onConnect: () => {
