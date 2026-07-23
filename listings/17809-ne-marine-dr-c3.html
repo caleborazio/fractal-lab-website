@@ -209,12 +209,17 @@
       // Fallback: if the agent has been idle (not speaking) for IDLE_NUDGE_MS
       // straight, send a quiet "[continue]" so it gets a turn to proceed.
       // The agent's prompt knows to treat "[continue]" like a silent turn.
-      // Kept short (~2.5s) so the tour flows section-to-section without long
-      // dead gaps; a visitor who wants to ask something can just start talking.
-      const IDLE_NUDGE_MS = 2500;
-      const MAX_NUDGES_PER_SESSION = 30;
+      // Short (~2s) so the tour flows section-to-section without long dead
+      // gaps; a visitor who wants to ask something can just start talking.
+      // BUT when the agent's last line was a QUESTION (ends in "?"), it is
+      // asking the visitor something and needs to actually wait for an answer,
+      // so we use a much longer delay before nudging in that case.
+      const IDLE_NUDGE_MS = 2000;
+      const IDLE_NUDGE_AFTER_QUESTION_MS = 14000;
+      const MAX_NUDGES_PER_SESSION = 40;
       let idleTimer = null;
       let nudgeCount = 0;
+      let lastAgentLineWasQuestion = false;
 
       function clearIdleTimer() {
         if (idleTimer !== null) { clearTimeout(idleTimer); idleTimer = null; }
@@ -222,12 +227,13 @@
       function armIdleTimer() {
         clearIdleTimer();
         if (!conversation || nudgeCount >= MAX_NUDGES_PER_SESSION) return;
+        const delay = lastAgentLineWasQuestion ? IDLE_NUDGE_AFTER_QUESTION_MS : IDLE_NUDGE_MS;
         idleTimer = setTimeout(() => {
           if (conversation && nudgeCount < MAX_NUDGES_PER_SESSION) {
             nudgeCount++;
             try { conversation.sendUserMessage('[continue]'); } catch (e) { console.error(e); }
           }
-        }, IDLE_NUDGE_MS);
+        }, delay);
       }
 
       // Single source of truth: every photo has its own unique id and a
@@ -424,7 +430,16 @@
               busy = false;
               btn.disabled = false;
               nudgeCount = 0;
+              lastAgentLineWasQuestion = false;
               armIdleTimer();
+            },
+            onMessage: (m) => {
+              // Track whether the agent's most recent spoken line was a
+              // question, so the idle nudge waits longer before prodding.
+              if (m && m.source === 'ai' && typeof m.message === 'string') {
+                const t = m.message.trim();
+                if (t) lastAgentLineWasQuestion = t.endsWith('?');
+              }
             },
             onDisconnect: () => {
               conversation = null;
