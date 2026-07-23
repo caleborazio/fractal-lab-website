@@ -209,8 +209,10 @@
       // Fallback: if the agent has been idle (not speaking) for IDLE_NUDGE_MS
       // straight, send a quiet "[continue]" so it gets a turn to proceed.
       // The agent's prompt knows to treat "[continue]" like a silent turn.
-      const IDLE_NUDGE_MS = 10000;
-      const MAX_NUDGES_PER_SESSION = 15;
+      // Kept short (~2.5s) so the tour flows section-to-section without long
+      // dead gaps; a visitor who wants to ask something can just start talking.
+      const IDLE_NUDGE_MS = 2500;
+      const MAX_NUDGES_PER_SESSION = 30;
       let idleTimer = null;
       let nudgeCount = 0;
 
