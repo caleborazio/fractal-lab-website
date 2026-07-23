@@ -203,6 +203,31 @@
       let conversation = null;
       let busy = false;
 
+      // The platform's own silence re-engagement is unreliable: sometimes it
+      // hands the agent a turn after ~10s of user silence, sometimes it never
+      // does and the call just stalls (observed 40-60s dead gaps mid-tour).
+      // Fallback: if the agent has been idle (not speaking) for IDLE_NUDGE_MS
+      // straight, send a quiet "[continue]" so it gets a turn to proceed.
+      // The agent's prompt knows to treat "[continue]" like a silent turn.
+      const IDLE_NUDGE_MS = 10000;
+      const MAX_NUDGES_PER_SESSION = 15;
+      let idleTimer = null;
+      let nudgeCount = 0;
+
+      function clearIdleTimer() {
+        if (idleTimer !== null) { clearTimeout(idleTimer); idleTimer = null; }
+      }
+      function armIdleTimer() {
+        clearIdleTimer();
+        if (!conversation || nudgeCount >= MAX_NUDGES_PER_SESSION) return;
+        idleTimer = setTimeout(() => {
+          if (conversation && nudgeCount < MAX_NUDGES_PER_SESSION) {
+            nudgeCount++;
+            try { conversation.sendUserMessage('[continue]'); } catch (e) { console.error(e); }
+          }
+        }, IDLE_NUDGE_MS);
+      }
+
       // Single source of truth: every photo has its own unique id and a
       // specific caption, grouped under a category only for on-page display.
       // The agent picks ONE specific photo id per thing it says, instead of
@@ -396,6 +421,8 @@
               setStatus('Listening…');
               busy = false;
               btn.disabled = false;
+              nudgeCount = 0;
+              armIdleTimer();
             },
             onDisconnect: () => {
               conversation = null;
@@ -404,14 +431,17 @@
               busy = false;
               btn.disabled = false;
               clearPhotoQueue();
+              clearIdleTimer();
             },
             onModeChange: ({ mode }) => {
               if (mode === 'speaking') {
                 setState('speaking');
                 setStatus('Speaking…');
+                clearIdleTimer();
               } else {
                 setState('active');
                 setStatus('Listening…');
+                armIdleTimer();
               }
             },
             onError: (message) => {
@@ -421,6 +451,7 @@
               conversation = null;
               busy = false;
               btn.disabled = false;
+              clearIdleTimer();
             },
           });
         } catch (err) {
