@@ -421,6 +421,11 @@
                   return { success: false, message: 'Unknown photo_id.' };
                 }
                 queuePhoto(photoSrc(p.n), p.caption);
+                // A tool call is real agent activity -- reset the idle timer
+                // so we don't fire a redundant [continue] mid-turn (mode can
+                // briefly flicker to "listening" between TTS chunks within
+                // what is conceptually still one continuous turn).
+                armIdleTimer();
                 return { success: true, message: `Showing: ${p.caption}` };
               },
             },
@@ -440,6 +445,9 @@
                 const t = m.message.trim();
                 if (t) lastAgentLineWasQuestion = t.endsWith('?');
               }
+              // Any message is real agent activity -- reset the idle timer,
+              // same reasoning as the show_photo reset above.
+              armIdleTimer();
             },
             onDisconnect: () => {
               conversation = null;
