@@ -475,24 +475,25 @@
                 if (tourActive && tourIndex < TOUR_STEPS.length && TOUR_STEPS[tourIndex].photo === photo_id) {
                   tourIndex++;
                 }
-                // A tool call is real agent activity -- reset the idle timer
-                // so we don't fire a redundant nudge mid-turn (mode can
-                // briefly flicker to "listening" between TTS chunks within
-                // what is conceptually still one continuous turn).
-                armIdleTimer();
+                // Do NOT reset the idle timer here. A tool call fires as soon
+                // as the text is generated, well before the TTS audio for that
+                // sentence has actually finished playing -- resetting on this
+                // signal made the countdown start too early and the next nudge
+                // would arrive while the agent was still audibly mid-sentence,
+                // cutting it off (confirmed via [interrupted] flags in the
+                // transcript). onModeChange is the authoritative "audio has
+                // actually stopped" signal; only that should arm the timer.
                 return { success: true, message: `Showing: ${p.caption}` };
               },
               start_guided_tour: async () => {
                 tourActive = true;
                 tourIndex = 0;
                 tourComplete = false;
-                armIdleTimer();
                 return { success: true, message: 'Tour started. Wait for your next instruction rather than trying to plan out the rooms yourself -- you will be told exactly what to cover, one section at a time.' };
               },
               mark_tour_complete: async () => {
                 tourComplete = true;
                 tourActive = false;
-                armIdleTimer();
                 return { success: true, message: 'Noted -- tour marked complete, nudging will back off now.' };
               },
             },
@@ -511,13 +512,14 @@
             onMessage: (m) => {
               // Track whether the agent's most recent spoken line was a
               // question, so the idle nudge waits longer before prodding.
+              // Deliberately does NOT touch the idle timer here -- text
+              // arrives before the matching audio finishes playing, so
+              // resetting on this signal caused premature nudges that cut
+              // the agent off mid-sentence. onModeChange owns timer arming.
               if (m && m.source === 'ai' && typeof m.message === 'string') {
                 const t = m.message.trim();
                 if (t) lastAgentLineWasQuestion = t.endsWith('?');
               }
-              // Any message is real agent activity -- reset the idle timer,
-              // same reasoning as the show_photo reset above.
-              armIdleTimer();
             },
             onDisconnect: () => {
               conversation = null;
