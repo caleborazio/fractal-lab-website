@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Draft Day — a Fractal Lab demo</title>
+  <meta name="robots" content="noindex, nofollow">
+  <meta http-equiv="refresh" content="1.5;url=https://draft-day-lake.vercel.app">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #13151B;
+      --bg-2: #191C24;
+      --accent: #5B86FF;
+      --accent-hi: #82A2FF;
+      --accent-ink: #0C0E14;
+      --accent-soft: rgba(91,134,255,0.12);
+      --text: #ECEFF5;
+      --text-2: #A2A9B8;
+      --text-3: #6E7585;
+      --border: rgba(255,255,255,0.10);
+      --sans: 'Hanken Grotesk', system-ui, sans-serif;
+      --mono: 'IBM Plex Mono', monospace;
+    }
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      -webkit-font-smoothing: antialiased;
+    }
+    .card {
+      max-width: 440px;
+      text-align: center;
+    }
+    .eyebrow {
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent-hi);
+      margin-bottom: 14px;
+    }
+    h1 {
+      font-size: 30px;
+      font-weight: 600;
+      line-height: 1.25;
+      letter-spacing: -0.01em;
+      margin-bottom: 14px;
+    }
+    p {
+      color: var(--text-2);
+      font-size: 16px;
+      line-height: 1.6;
+      margin-bottom: 28px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--accent);
+      color: var(--accent-ink);
+      font-weight: 600;
+      font-size: 15px;
+      padding: 13px 26px;
+      border-radius: 999px;
+      text-decoration: none;
+    }
+    .spinner {
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      border: 2px solid var(--accent-soft);
+      border-top-color: var(--accent);
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+      margin-right: 10px;
+      vertical-align: -3px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .back {
+      display: block;
+      margin-top: 22px;
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--text-3);
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <p class="eyebrow">Fractal Lab · Demo</p>
+    <h1>Draft Day</h1>
+    <p><span class="spinner"></span>Taking you to the live app — a fantasy football draft-order lottery and live draft board, built end to end.</p>
+    <a class="btn" href="https://draft-day-lake.vercel.app">Open Draft Day &rarr;</a>
+    <a class="back" href="/">&larr; fractallab.co</a>
+  </div>
+</body>
+</html>
