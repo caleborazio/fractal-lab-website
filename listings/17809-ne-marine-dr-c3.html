@@ -216,10 +216,16 @@
       // so we use a much longer delay before nudging in that case.
       const IDLE_NUDGE_MS = 2000;
       const IDLE_NUDGE_AFTER_QUESTION_MS = 14000;
+      const IDLE_NUDGE_AFTER_TOUR_MS = 20000;
       const MAX_NUDGES_PER_SESSION = 40;
       let idleTimer = null;
       let nudgeCount = 0;
       let lastAgentLineWasQuestion = false;
+      // Set once the agent calls mark_tour_complete. After that we back off
+      // the nudge interval a lot -- the tour is done, there's no more
+      // sequence to auto-advance through, so aggressive nudging was making
+      // the model repeat its closing line or (worse) restart the whole tour.
+      let tourComplete = false;
 
       function clearIdleTimer() {
         if (idleTimer !== null) { clearTimeout(idleTimer); idleTimer = null; }
@@ -227,7 +233,9 @@
       function armIdleTimer() {
         clearIdleTimer();
         if (!conversation || nudgeCount >= MAX_NUDGES_PER_SESSION) return;
-        const delay = lastAgentLineWasQuestion ? IDLE_NUDGE_AFTER_QUESTION_MS : IDLE_NUDGE_MS;
+        const delay = tourComplete
+          ? IDLE_NUDGE_AFTER_TOUR_MS
+          : (lastAgentLineWasQuestion ? IDLE_NUDGE_AFTER_QUESTION_MS : IDLE_NUDGE_MS);
         idleTimer = setTimeout(() => {
           if (conversation && nudgeCount < MAX_NUDGES_PER_SESSION) {
             nudgeCount++;
@@ -428,6 +436,11 @@
                 armIdleTimer();
                 return { success: true, message: `Showing: ${p.caption}` };
               },
+              mark_tour_complete: async () => {
+                tourComplete = true;
+                armIdleTimer();
+                return { success: true, message: 'Noted -- tour marked complete, nudging will back off now.' };
+              },
             },
             onConnect: () => {
               setState('active');
@@ -436,6 +449,7 @@
               btn.disabled = false;
               nudgeCount = 0;
               lastAgentLineWasQuestion = false;
+              tourComplete = false;
               armIdleTimer();
             },
             onMessage: (m) => {
