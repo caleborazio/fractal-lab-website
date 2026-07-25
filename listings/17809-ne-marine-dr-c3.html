@@ -203,12 +203,42 @@
       let conversation = null;
       let busy = false;
 
+      // ARCHITECTURE NOTE: the tour sequence is now driven entirely by this
+      // client-side array, not by the LLM's own memory of "where am I in a
+      // 13-item list." Every prior approach that asked the model to track
+      // its own position across many turns eventually drifted -- skipping
+      // sections, repeating them, or restarting from scratch. Instead, the
+      // client tracks tourIndex deterministically and, each time the agent
+      // goes idle, sends the ONE specific instruction for the current step.
+      // The model's job per turn shrinks to "follow this one instruction,"
+      // which is far more reliable than "remember and self-pace the plan."
+      const TOUR_STEPS = [
+        { photo: 'exterior-front', instruction: 'Describe the front entrance of the home (covered porch) in 1-2 natural sentences, then call show_photo with exterior-front.' },
+        { photo: 'exterior-back-garage', instruction: 'Describe the back of the home, where the boat well garage and spiral staircase are, in 1-2 sentences, then call show_photo with exterior-back-garage.' },
+        { photo: 'aerial-mt-hood', instruction: 'Describe the McGuire Point Marina community setting, mentioning Mt. Hood is visible in the distance, in 1-2 sentences, then call show_photo with aerial-mt-hood.' },
+        { photo: 'deck-fall-colors', instruction: 'Describe Government Island across the water -- a boat-access-only wildlife area where eagles and osprey can be spotted -- in 1-2 sentences, then call show_photo with deck-fall-colors.' },
+        { photo: 'living-room-fireplace', instruction: 'Describe the living room (gas fireplace, vaulted ceilings, expansive windows) in 1-2 sentences, then call show_photo with living-room-fireplace.' },
+        { photo: 'dining-room-window', instruction: 'Describe the dining room and its river view in 1-2 sentences, then call show_photo with dining-room-window.' },
+        { photo: 'kitchen-quartz-island', instruction: 'Describe the kitchen (quartz counters, stainless appliances) in 1-2 sentences, then call show_photo with kitchen-quartz-island.' },
+        { photo: 'primary-bedroom', instruction: 'Describe the primary bedroom in 1-2 sentences, then call show_photo with primary-bedroom.' },
+        { photo: 'primary-bathroom-tub-shower', instruction: 'Describe the primary bathroom (jetted soaking tub, separate shower) in 1-2 sentences, then call show_photo with primary-bathroom-tub-shower.' },
+        { photo: 'murphy-bed-down', instruction: 'Describe the second bedroom, which has a murphy bed, in 1-2 sentences, then call show_photo with murphy-bed-down.' },
+        { photo: 'guest-bedroom-colorful', instruction: 'Describe the third bedroom (a guest bedroom) in 1-2 sentences, then call show_photo with guest-bedroom-colorful.' },
+        { photo: 'office-music-room', instruction: 'Describe the fourth bedroom, currently set up as an office/music room, in 1-2 sentences, then call show_photo with office-music-room.' },
+        { photo: 'laundry-room', instruction: 'Describe the laundry room in 1-2 sentences, then call show_photo with laundry-room.' },
+        { photo: 'boat-well-interior', instruction: 'Describe the boat well (private under-home garage with direct river access) in 1-2 sentences, then call show_photo with boat-well-interior.' },
+        { photo: 'exterior-dock-view-2', instruction: 'Give one closing outdoor shot in 1-2 sentences, then call show_photo with exterior-dock-view-2. This is the last section of the tour.' },
+      ];
+      const TOUR_CLOSING_INSTRUCTION = 'The walkthrough is now complete -- do not show any more photos automatically. Give a brief, warm closing line inviting them to ask about anything specific or see more photos of any area, then call mark_tour_complete in the same response.';
+
+      let tourActive = false;
+      let tourIndex = 0;
+
       // The platform's own silence re-engagement is unreliable: sometimes it
       // hands the agent a turn after ~10s of user silence, sometimes it never
       // does and the call just stalls (observed 40-60s dead gaps mid-tour).
       // Fallback: if the agent has been idle (not speaking) for IDLE_NUDGE_MS
-      // straight, send a quiet "[continue]" so it gets a turn to proceed.
-      // The agent's prompt knows to treat "[continue]" like a silent turn.
+      // straight, send a targeted instruction so it gets a turn to proceed.
       // Short (~2s) so the tour flows section-to-section without long dead
       // gaps; a visitor who wants to ask something can just start talking.
       // BUT when the agent's last line was a QUESTION (ends in "?"), it is
@@ -223,8 +253,7 @@
       let lastAgentLineWasQuestion = false;
       // Set once the agent calls mark_tour_complete. After that we back off
       // the nudge interval a lot -- the tour is done, there's no more
-      // sequence to auto-advance through, so aggressive nudging was making
-      // the model repeat its closing line or (worse) restart the whole tour.
+      // sequence to auto-advance through.
       let tourComplete = false;
 
       function clearIdleTimer() {
@@ -237,10 +266,18 @@
           ? IDLE_NUDGE_AFTER_TOUR_MS
           : (lastAgentLineWasQuestion ? IDLE_NUDGE_AFTER_QUESTION_MS : IDLE_NUDGE_MS);
         idleTimer = setTimeout(() => {
-          if (conversation && nudgeCount < MAX_NUDGES_PER_SESSION) {
-            nudgeCount++;
-            try { conversation.sendUserMessage('[continue]'); } catch (e) { console.error(e); }
+          if (!conversation || nudgeCount >= MAX_NUDGES_PER_SESSION) return;
+          nudgeCount++;
+          let payload = '[continue]';
+          if (tourActive) {
+            if (tourIndex < TOUR_STEPS.length) {
+              payload = `[next section: ${TOUR_STEPS[tourIndex].instruction}]`;
+            } else {
+              payload = `[${TOUR_CLOSING_INSTRUCTION}]`;
+              tourActive = false;
+            }
           }
+          try { conversation.sendUserMessage(payload); } catch (e) { console.error(e); }
         }, delay);
       }
 
@@ -429,15 +466,32 @@
                   return { success: false, message: 'Unknown photo_id.' };
                 }
                 queuePhoto(photoSrc(p.n), p.caption);
+                // If this matches the CURRENT expected tour step, advance the
+                // deterministic index. If it doesn't match (visitor asked a
+                // free-form question and got a different photo instead), the
+                // index does not move -- the next nudge will re-send the same
+                // step, so the tour naturally resumes where it paused rather
+                // than skipping or losing its place.
+                if (tourActive && tourIndex < TOUR_STEPS.length && TOUR_STEPS[tourIndex].photo === photo_id) {
+                  tourIndex++;
+                }
                 // A tool call is real agent activity -- reset the idle timer
-                // so we don't fire a redundant [continue] mid-turn (mode can
+                // so we don't fire a redundant nudge mid-turn (mode can
                 // briefly flicker to "listening" between TTS chunks within
                 // what is conceptually still one continuous turn).
                 armIdleTimer();
                 return { success: true, message: `Showing: ${p.caption}` };
               },
+              start_guided_tour: async () => {
+                tourActive = true;
+                tourIndex = 0;
+                tourComplete = false;
+                armIdleTimer();
+                return { success: true, message: 'Tour started. Wait for your next instruction rather than trying to plan out the rooms yourself -- you will be told exactly what to cover, one section at a time.' };
+              },
               mark_tour_complete: async () => {
                 tourComplete = true;
+                tourActive = false;
                 armIdleTimer();
                 return { success: true, message: 'Noted -- tour marked complete, nudging will back off now.' };
               },
@@ -450,6 +504,8 @@
               nudgeCount = 0;
               lastAgentLineWasQuestion = false;
               tourComplete = false;
+              tourActive = false;
+              tourIndex = 0;
               armIdleTimer();
             },
             onMessage: (m) => {
