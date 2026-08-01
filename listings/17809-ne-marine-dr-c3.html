@@ -253,7 +253,7 @@
       // BUT when the agent's last line was a QUESTION (ends in "?"), it is
       // asking the visitor something and needs to actually wait for an answer,
       // so we use a much longer delay before nudging in that case.
-      const IDLE_NUDGE_MS = 2000;
+      const IDLE_NUDGE_MS = 3200;
       const IDLE_NUDGE_AFTER_QUESTION_MS = 14000;
       const IDLE_NUDGE_AFTER_TOUR_MS = 20000;
       const MAX_NUDGES_PER_SESSION = 40;
@@ -277,12 +277,20 @@
         idleTimer = setTimeout(() => {
           if (!conversation || nudgeCount >= MAX_NUDGES_PER_SESSION) return;
           nudgeCount++;
-          let payload = '[continue]';
+          // No fixed wrapper/template (no brackets, no repeated "next
+          // section:" prefix) -- sending the exact same wrapper string 15+
+          // times in a row taught the model to auto-complete and speak its
+          // own compressed version of that template instead of following
+          // the real instruction (confirmed in transcript: leaked text was
+          // a paraphrase of the wrapper shape, not the actual content).
+          // Plain instruction text, varied slightly, reads as a direction
+          // rather than a learnable fixed pattern.
+          let payload = 'Visitor is quiet -- continue naturally.';
           if (tourActive) {
             if (tourIndex < TOUR_STEPS.length) {
-              payload = `[next section: ${TOUR_STEPS[tourIndex].instruction}]`;
+              payload = TOUR_STEPS[tourIndex].instruction;
             } else {
-              payload = `[next section: ${TOUR_CLOSING_INSTRUCTION}]`;
+              payload = TOUR_CLOSING_INSTRUCTION;
               tourActive = false;
             }
           }
