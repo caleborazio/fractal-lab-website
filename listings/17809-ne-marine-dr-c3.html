@@ -232,7 +232,13 @@
         { photo: 'boat-well-interior', instruction: 'Describe the boat well (private under-home garage with direct river access) in 1-2 sentences, then call show_photo with boat-well-interior.' },
         { photo: 'exterior-dock-view-2', instruction: 'Give one closing outdoor shot in 1-2 sentences, then call show_photo with exterior-dock-view-2. This is the last section of the tour.' },
       ];
-      const TOUR_CLOSING_INSTRUCTION = 'The walkthrough is now complete -- do not show any more photos automatically. Give a brief, warm closing line inviting them to ask about anything specific or see more photos of any area, then call mark_tour_complete in the same response.';
+      // Deliberately worded and formatted just like a normal TOUR_STEPS entry
+      // (same "describe X, then call Y" imperative shape, similar length) --
+      // the previous, differently-shaped closing instruction (longer, no
+      // photo_id, different phrasing) seemed to be exactly what triggered the
+      // agent to hallucinate its own paraphrased bracket text instead of
+      // following the real one. Consistency with the other 15 steps fixed it.
+      const TOUR_CLOSING_INSTRUCTION = 'Say the walkthrough is complete, ask if they have any other questions about the home or want to see more of any room, and mention they can also reach the listing office (Portland Digs) directly if they would like to talk to a person, then call mark_tour_complete.';
 
       let tourActive = false;
       let tourIndex = 0;
@@ -276,7 +282,7 @@
             if (tourIndex < TOUR_STEPS.length) {
               payload = `[next section: ${TOUR_STEPS[tourIndex].instruction}]`;
             } else {
-              payload = `[${TOUR_CLOSING_INSTRUCTION}]`;
+              payload = `[next section: ${TOUR_CLOSING_INSTRUCTION}]`;
               tourActive = false;
             }
           }
