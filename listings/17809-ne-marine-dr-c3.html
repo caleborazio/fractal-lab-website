@@ -83,6 +83,9 @@
       color: var(--text-2); background: var(--bg-2); border: 1px solid var(--border-2); border-radius: 999px;
       padding: 7px 14px; opacity: 0; transform: translateY(6px); transition: opacity .25s ease, transform .25s ease; pointer-events: none; white-space: nowrap; }
     .voice-status.show { opacity: 1; transform: none; }
+    a.voice-status { color: var(--accent-hi); border-color: var(--accent); cursor: pointer; }
+    a.voice-status.show { pointer-events: auto; }
+    a.voice-status:hover { background: var(--accent-soft); }
     .voice-btn { width: 62px; height: 62px; border-radius: 50%; border: none; cursor: pointer;
       background: var(--accent); color: var(--accent-ink); display: flex; align-items: center; justify-content: center;
       box-shadow: 0 6px 20px rgba(91,134,255,0.35); transition: transform .18s ease, background .2s ease, box-shadow .2s ease;
@@ -189,6 +192,7 @@
   </div>
 
   <div class="voice-widget">
+    <a class="voice-status mono" id="agentCallLink" href="tel:+15032397400">Call Portland Digs &rarr;</a>
     <div class="voice-status mono" id="voiceStatus"></div>
     <button class="voice-btn" id="voiceBtn" aria-label="Talk to the listing voice assistant">
       <span class="ring"></span>
@@ -203,6 +207,7 @@
       const AGENT_ID = 'agent_2901kx7y4vd3fjjtnqpq886g26d0';
       const btn = document.getElementById('voiceBtn');
       const status = document.getElementById('voiceStatus');
+      const agentCallLink = document.getElementById('agentCallLink');
       let conversation = null;
       let busy = false;
 
@@ -238,7 +243,7 @@
       // photo_id, different phrasing) seemed to be exactly what triggered the
       // agent to hallucinate its own paraphrased bracket text instead of
       // following the real one. Consistency with the other 15 steps fixed it.
-      const TOUR_CLOSING_INSTRUCTION = 'Say the walkthrough is complete, ask if they have any other questions about the home or want to see more of any room, and mention they can also reach the listing office (Portland Digs) directly if they would like to talk to a person, then call mark_tour_complete.';
+      const TOUR_CLOSING_INSTRUCTION = 'Say in ONE short sentence that the walkthrough is complete and ask if they have any other questions or want to see any room again, then call mark_tour_complete. Say this once -- do not follow it with a second wrap-up or goodbye in the same or a later turn unless the visitor actually says something new.';
 
       let tourActive = false;
       let tourIndex = 0;
@@ -483,6 +488,22 @@
                   return { success: false, message: 'Unknown photo_id.' };
                 }
                 queuePhoto(photoSrc(p.n), p.caption);
+                // Safety net: the agent is supposed to call start_guided_tour
+                // before narrating the tour, but tool-call compliance isn't
+                // 100% reliable -- observed a full session where it never
+                // called it and just free-associated through rooms out of
+                // order instead, because tourActive was never set to true.
+                // If show_photo lands on ANY tour-sequence photo while we are
+                // not yet tracking a tour, self-activate at that point so the
+                // deterministic system takes over from here even if the
+                // explicit handoff was missed.
+                if (!tourActive && !tourComplete) {
+                  const matchIdx = TOUR_STEPS.findIndex((s) => s.photo === photo_id);
+                  if (matchIdx !== -1) {
+                    tourActive = true;
+                    tourIndex = matchIdx;
+                  }
+                }
                 // If this matches the CURRENT expected tour step, advance the
                 // deterministic index. If it doesn't match (visitor asked a
                 // free-form question and got a different photo instead), the
@@ -513,6 +534,10 @@
                 tourActive = false;
                 return { success: true, message: 'Noted -- tour marked complete, nudging will back off now.' };
               },
+              show_agent_contact: async () => {
+                agentCallLink.classList.add('show');
+                return { success: true, message: 'A tappable "Call Portland Digs" link is now visible on the visitor\'s screen.' };
+              },
             },
             onConnect: () => {
               setState('active');
@@ -524,6 +549,7 @@
               tourComplete = false;
               tourActive = false;
               tourIndex = 0;
+              agentCallLink.classList.remove('show');
               armIdleTimer();
             },
             onMessage: (m) => {
@@ -546,6 +572,7 @@
               btn.disabled = false;
               clearPhotoQueue();
               clearIdleTimer();
+              agentCallLink.classList.remove('show');
             },
             onModeChange: ({ mode }) => {
               if (mode === 'speaking') {
