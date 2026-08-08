@@ -550,7 +550,16 @@
                 tourActive = true;
                 tourIndex = 0;
                 tourComplete = false;
-                return { success: true, message: 'Tour started. Wait for your next instruction rather than trying to plan out the rooms yourself -- you will be told exactly what to cover, one section at a time.' };
+                // Folds the first step's instruction into the tool result
+                // itself instead of telling the model to "stop and wait" --
+                // that phrasing failed twice in testing (the model kept
+                // continuing in the same generation right after the tool
+                // call anyway, once free-associating the exterior and once
+                // jumping straight to the primary bedroom out of order,
+                // despite explicit instructions not to). Giving it concrete
+                // content to continue with channels that same continuation
+                // impulse into the correct first room instead of fighting it.
+                return { success: true, message: `Tour started. Say one brief, natural reassuring line, then immediately continue in this same turn with: ${TOUR_STEPS[0].instruction}` };
               },
               mark_tour_complete: async () => {
                 tourComplete = true;
@@ -587,6 +596,16 @@
               if (m && m.source === 'ai' && typeof m.message === 'string') {
                 const t = m.message.trim();
                 if (t) lastAgentLineWasQuestion = t.endsWith('?');
+                // Safety net: a transcript showed the agent verbally
+                // claiming it had "pulled up" / "re-displayed" the Portland
+                // Digs number on screen -- twice in the same call -- while
+                // never actually calling show_agent_contact at all. If the
+                // spoken line sounds like it's referencing the on-screen
+                // link, show it for real so the visitor isn't misled by a
+                // claim the agent didn't back up with the actual tool call.
+                if (/portland digs/i.test(t) && /(pulled up|display|on (your|the) screen|screen now|right there|number)/i.test(t)) {
+                  agentCallLink.classList.add('show');
+                }
               }
             },
             onDisconnect: () => {
