@@ -263,8 +263,10 @@
       const IDLE_NUDGE_AFTER_TOUR_MS = 20000;
       const MAX_NUDGES_PER_SESSION = 40;
       let idleTimer = null;
+      let watchdogTimer = null;
       let nudgeCount = 0;
       let lastAgentLineWasQuestion = false;
+      let currentlySpeaking = false;
       // Set once the agent calls mark_tour_complete. After that we back off
       // the nudge interval a lot -- the tour is done, there's no more
       // sequence to auto-advance through.
@@ -280,6 +282,7 @@
           ? IDLE_NUDGE_AFTER_TOUR_MS
           : (lastAgentLineWasQuestion ? IDLE_NUDGE_AFTER_QUESTION_MS : IDLE_NUDGE_MS);
         idleTimer = setTimeout(() => {
+          idleTimer = null;
           if (!conversation || nudgeCount >= MAX_NUDGES_PER_SESSION) return;
           nudgeCount++;
           // No fixed wrapper/template (no brackets, no repeated "next
@@ -301,6 +304,26 @@
           }
           try { conversation.sendUserMessage(payload); } catch (e) { console.error(e); }
         }, delay);
+      }
+
+      // Self-heal against a dropped SDK mode-change event. onModeChange is
+      // supposed to be the sole authority arming/clearing the idle timer,
+      // but a transcript showed a ~45s dead-air stretch mid-tour where the
+      // agent finished speaking and the "listening" mode-change apparently
+      // never fired -- no timer was ever armed, so the tour just hung until
+      // the visitor manually spoke up. This watchdog runs independently and
+      // arms a timer if one should clearly be pending but isn't.
+      const WATCHDOG_INTERVAL_MS = 4000;
+      function startWatchdog() {
+        stopWatchdog();
+        watchdogTimer = setInterval(() => {
+          if (conversation && !currentlySpeaking && idleTimer === null && nudgeCount < MAX_NUDGES_PER_SESSION) {
+            armIdleTimer();
+          }
+        }, WATCHDOG_INTERVAL_MS);
+      }
+      function stopWatchdog() {
+        if (watchdogTimer !== null) { clearInterval(watchdogTimer); watchdogTimer = null; }
       }
 
       // Single source of truth: every photo has its own unique id and a
@@ -549,8 +572,10 @@
               tourComplete = false;
               tourActive = false;
               tourIndex = 0;
+              currentlySpeaking = false;
               agentCallLink.classList.remove('show');
               armIdleTimer();
+              startWatchdog();
             },
             onMessage: (m) => {
               // Track whether the agent's most recent spoken line was a
@@ -572,10 +597,12 @@
               btn.disabled = false;
               clearPhotoQueue();
               clearIdleTimer();
+              stopWatchdog();
               agentCallLink.classList.remove('show');
             },
             onModeChange: ({ mode }) => {
-              if (mode === 'speaking') {
+              currentlySpeaking = mode === 'speaking';
+              if (currentlySpeaking) {
                 setState('speaking');
                 setStatus('Speaking…');
                 clearIdleTimer();
