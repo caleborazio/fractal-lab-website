@@ -282,6 +282,19 @@
       let nudgeCount = 0;
       let lastAgentLineWasQuestion = false;
       let currentlySpeaking = false;
+      // Tracks the exact text of the last nudge WE injected via
+      // sendUserMessage, so onMessage can tell "the visitor actually said
+      // something" apart from "our own injected nudge just echoed back into
+      // the transcript as a user-source message" (the SDK reports both the
+      // same way). A transcript showed the tour barreling through room after
+      // room -- "Describe the McGuire..." landing 8s after the visitor asked
+      // a real follow-up question, "How much is the primary bathroom?"
+      // landing right on top of the next nudge -- because nothing gave the
+      // visitor's own interjections any extra breathing room before the next
+      // forced tour step. Real interjections now buy a longer pause, the
+      // same way an agent-asked question already does.
+      let lastNudgePayload = null;
+      let recentRealUserInterjection = false;
       // Set once the agent calls mark_tour_complete. After that we back off
       // the nudge interval a lot -- the tour is done, there's no more
       // sequence to auto-advance through.
@@ -295,11 +308,15 @@
         if (!conversation || nudgeCount >= MAX_NUDGES_PER_SESSION) return;
         const delay = tourComplete
           ? IDLE_NUDGE_AFTER_TOUR_MS
-          : (lastAgentLineWasQuestion ? IDLE_NUDGE_AFTER_QUESTION_MS : IDLE_NUDGE_MS);
+          : ((lastAgentLineWasQuestion || recentRealUserInterjection) ? IDLE_NUDGE_AFTER_QUESTION_MS : IDLE_NUDGE_MS);
         idleTimer = setTimeout(() => {
           idleTimer = null;
           if (!conversation || nudgeCount >= MAX_NUDGES_PER_SESSION) return;
           nudgeCount++;
+          // The visitor got their extra breathing room for this nudge;
+          // reset so a fully quiet stretch afterward falls back to the
+          // normal short tour cadence instead of staying stretched out.
+          recentRealUserInterjection = false;
           // No fixed wrapper/template (no brackets, no repeated "next
           // section:" prefix) -- sending the exact same wrapper string 15+
           // times in a row taught the model to auto-complete and speak its
@@ -317,6 +334,7 @@
               tourActive = false;
             }
           }
+          lastNudgePayload = payload;
           try { conversation.sendUserMessage(payload); } catch (e) { console.error(e); }
         }, delay);
       }
@@ -609,6 +627,8 @@
               tourIndex = 0;
               tourPaused = false;
               currentlySpeaking = false;
+              lastNudgePayload = null;
+              recentRealUserInterjection = false;
               agentCallLink.classList.remove('show');
               armIdleTimer();
               startWatchdog();
@@ -632,6 +652,18 @@
                 // claim the agent didn't back up with the actual tool call.
                 if (/portland digs/i.test(t) && /(pulled up|display|on (your|the) screen|screen now|right there|number)/i.test(t)) {
                   agentCallLink.classList.add('show');
+                }
+              }
+              // A real user utterance (not our own injected nudge echoing
+              // back through the transcript as a user-source message) means
+              // the visitor is actively engaged in conversation -- give the
+              // next tour-step nudge extra breathing room instead of barging
+              // back in a few seconds later. See the lastNudgePayload note
+              // above for why this comparison exists.
+              if (m && m.source === 'user' && typeof m.message === 'string') {
+                const t = m.message.trim();
+                if (t && t !== lastNudgePayload) {
+                  recentRealUserInterjection = true;
                 }
               }
             },
