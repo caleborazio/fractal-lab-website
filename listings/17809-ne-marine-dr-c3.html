@@ -78,7 +78,12 @@
     .lightbox .close { position: absolute; top: 1.5rem; right: 1.5rem; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border-2); background: var(--bg-2); color: var(--text); cursor: pointer; font-size: 18px; }
 
     /* Voice widget (same pattern as main site) */
-    .voice-widget { position: fixed; right: 24px; bottom: 72px; z-index: 200; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+    /* z-index above .lightbox (300) -- the widget, including the tappable
+       contact link, must stay visible and clickable even while a tour photo
+       is showing full-screen. A visitor reported the contact link being
+       hidden behind the photo, which traced back to the lightbox having a
+       higher z-index than the widget. */
+    .voice-widget { position: fixed; right: 24px; bottom: 72px; z-index: 320; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
     .voice-status { font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
       color: var(--text-2); background: var(--bg-2); border: 1px solid var(--border-2); border-radius: 999px;
       padding: 7px 14px; opacity: 0; transform: translateY(6px); transition: opacity .25s ease, transform .25s ease; pointer-events: none; white-space: nowrap; }
@@ -568,7 +573,16 @@
               },
               show_agent_contact: async () => {
                 agentCallLink.classList.add('show');
-                return { success: true, message: 'A tappable "Call Portland Digs" link is now visible on the visitor\'s screen.' };
+                // Asking for the contact link is a strong signal the visitor
+                // wants to step away from the auto-guided tour and talk
+                // directly -- a transcript showed the tour nudges kept
+                // firing photo instructions right in the middle of a
+                // visitor trying to troubleshoot/talk to the agent, which
+                // read as the assistant "not listening." Pause the
+                // deterministic tour advance here so nudges stop cutting in;
+                // the visitor can always ask to resume the tour.
+                tourActive = false;
+                return { success: true, message: 'A tappable "Call Portland Digs" link is now visible on the visitor\'s screen. The guided tour has been paused so it does not talk over this -- only resume it if the visitor explicitly asks to continue.' };
               },
             },
             onConnect: () => {
