@@ -243,7 +243,7 @@
       // photo_id, different phrasing) seemed to be exactly what triggered the
       // agent to hallucinate its own paraphrased bracket text instead of
       // following the real one. Consistency with the other 15 steps fixed it.
-      const TOUR_CLOSING_INSTRUCTION = 'Say in ONE short sentence that the walkthrough is complete and ask if they have any other questions or want to see any room again, then call mark_tour_complete. Say this once -- do not follow it with a second wrap-up or goodbye in the same or a later turn unless the visitor actually says something new.';
+      const TOUR_CLOSING_INSTRUCTION = 'In ONE short bit of natural speech: say the walkthrough is complete, ask if they have any other questions or want to see any room again, and mention they can also reach Portland Digs directly if they would like to talk to a person about this home -- then call show_agent_contact (so the tappable number shows up right along with that offer) and call mark_tour_complete. Say this once -- do not follow it with a second wrap-up or goodbye in the same or a later turn unless the visitor actually says something new.';
 
       let tourActive = false;
       let tourIndex = 0;
