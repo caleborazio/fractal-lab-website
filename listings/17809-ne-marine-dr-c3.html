@@ -252,6 +252,16 @@
 
       let tourActive = false;
       let tourIndex = 0;
+      // Distinguishes "tour never started" (should self-heal, see the
+      // show_photo safety net below) from "tour was deliberately paused"
+      // (should stay off). Without this, a transcript showed: visitor asks
+      // for the contact link -> tourActive correctly goes false -> agent
+      // free-narrates a room anyway (ignoring the "don't resume" prompt
+      // rule) -> that photo happens to match a TOUR_STEPS id -> the safety
+      // net mistakes it for a missed start_guided_tour call and silently
+      // reactivates the deterministic march through remaining rooms,
+      // overriding the pause the visitor asked for.
+      let tourPaused = false;
 
       // The platform's own silence re-engagement is unreliable: sometimes it
       // hands the agent a turn after ~10s of user silence, sometimes it never
@@ -525,7 +535,7 @@
                 // not yet tracking a tour, self-activate at that point so the
                 // deterministic system takes over from here even if the
                 // explicit handoff was missed.
-                if (!tourActive && !tourComplete) {
+                if (!tourActive && !tourComplete && !tourPaused) {
                   const matchIdx = TOUR_STEPS.findIndex((s) => s.photo === photo_id);
                   if (matchIdx !== -1) {
                     tourActive = true;
@@ -555,6 +565,7 @@
                 tourActive = true;
                 tourIndex = 0;
                 tourComplete = false;
+                tourPaused = false;
                 // Folds the first step's instruction into the tool result
                 // itself instead of telling the model to "stop and wait" --
                 // that phrasing failed twice in testing (the model kept
@@ -582,6 +593,7 @@
                 // deterministic tour advance here so nudges stop cutting in;
                 // the visitor can always ask to resume the tour.
                 tourActive = false;
+                tourPaused = true;
                 return { success: true, message: 'A tappable "Call Portland Digs" link is now visible on the visitor\'s screen. The guided tour has been paused so it does not talk over this -- only resume it if the visitor explicitly asks to continue.' };
               },
             },
@@ -595,6 +607,7 @@
               tourComplete = false;
               tourActive = false;
               tourIndex = 0;
+              tourPaused = false;
               currentlySpeaking = false;
               agentCallLink.classList.remove('show');
               armIdleTimer();
