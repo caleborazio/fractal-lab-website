@@ -162,6 +162,13 @@ interface JsonLdProduct {
   name?: string;
   description?: string;
   image?: string | string[];
+  brand?: string | { name?: string };
+}
+
+function brandName(brand: JsonLdProduct["brand"]): string | null {
+  if (!brand) return null;
+  if (typeof brand === "string") return brand;
+  return brand.name ?? null;
 }
 
 /**
@@ -204,7 +211,17 @@ function extractGeneric(
     $('meta[property="og:description"]').attr("content") ||
     $('meta[name="description"]').attr("content") ||
     null;
-  const text = [title, description]
+  const brand = brandName(product?.brand);
+  // Many sites (Vinted included) mark up a size field with schema.org
+  // microdata (itemprop="size") even without a JSON-LD equivalent.
+  const sizeFromMicrodata = $("[itemprop='size']").first().text().trim() || null;
+
+  const text = [
+    title,
+    brand ? `Brand: ${brand}` : null,
+    sizeFromMicrodata ? `Size (as listed): ${sizeFromMicrodata}` : null,
+    description,
+  ]
     .filter((s): s is string => !!s && s.trim().length > 0)
     .join("\n\n")
     .slice(0, 4000);
