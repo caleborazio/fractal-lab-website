@@ -62,7 +62,7 @@ export async function extractMeasurements(
   images: { base64: string; mimeType: string }[],
   listingText?: string
 ): Promise<ExtractionResult> {
-  const modelName = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+  const modelName = process.env.GEMINI_MODEL || "gemini-3.6-flash";
   const model = getClient().getGenerativeModel({
     model: modelName,
     generationConfig: {
