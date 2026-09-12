@@ -1,5 +1,5 @@
 import { SignIn } from "@clerk/nextjs";
-import { safeReturnPath } from "@/lib/auth";
+import { clerkEnabled, safeReturnPath } from "@/lib/auth";
 
 export default async function SignInPage({
   searchParams,
@@ -23,16 +23,24 @@ export default async function SignInPage({
         </span>
       </header>
       <div className="flex flex-1 items-center justify-center">
-        <SignIn
-          forceRedirectUrl={back}
-          signUpUrl={back ? `/sign-up?redirect_url=${encodeURIComponent(back)}` : "/sign-up"}
-          appearance={{
-            variables: {
-              colorPrimary: "#8a6112",
-              borderRadius: "0.5rem",
-            },
-          }}
-        />
+        {clerkEnabled ? (
+          <SignIn
+            forceRedirectUrl={back}
+            signUpUrl={back ? `/sign-up?redirect_url=${encodeURIComponent(back)}` : "/sign-up"}
+            appearance={{
+              variables: {
+                colorPrimary: "#8a6112",
+                borderRadius: "0.5rem",
+              },
+            }}
+          />
+        ) : (
+          // <SignIn> needs a mounted <ClerkProvider>, which layout.tsx only
+          // renders when Clerk is configured -- without keys, every visitor
+          // is already "dev-user" and never gets routed here, but the route
+          // still exists, so it should say why rather than throw.
+          <p className="text-ink-soft">Sign-in isn&apos;t configured yet.</p>
+        )}
       </div>
     </main>
   );

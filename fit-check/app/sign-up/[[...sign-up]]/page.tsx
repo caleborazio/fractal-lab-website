@@ -1,5 +1,5 @@
 import { SignUp } from "@clerk/nextjs";
-import { safeReturnPath } from "@/lib/auth";
+import { clerkEnabled, safeReturnPath } from "@/lib/auth";
 
 export default async function SignUpPage({
   searchParams,
@@ -23,16 +23,20 @@ export default async function SignUpPage({
         </span>
       </header>
       <div className="flex flex-1 items-center justify-center">
-        <SignUp
-          forceRedirectUrl={back}
-          signInUrl={back ? `/sign-in?redirect_url=${encodeURIComponent(back)}` : "/sign-in"}
-          appearance={{
-            variables: {
-              colorPrimary: "#8a6112",
-              borderRadius: "0.5rem",
-            },
-          }}
-        />
+        {clerkEnabled ? (
+          <SignUp
+            forceRedirectUrl={back}
+            signInUrl={back ? `/sign-in?redirect_url=${encodeURIComponent(back)}` : "/sign-in"}
+            appearance={{
+              variables: {
+                colorPrimary: "#8a6112",
+                borderRadius: "0.5rem",
+              },
+            }}
+          />
+        ) : (
+          <p className="text-ink-soft">Sign-up isn&apos;t configured yet.</p>
+        )}
       </div>
     </main>
   );
