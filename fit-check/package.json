@@ -10,6 +10,7 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@clerk/nextjs": "^7.5.20",
     "@google/generative-ai": "^0.21.0",
     "@prisma/client": "^6.19.3",
     "cheerio": "^1.2.0",

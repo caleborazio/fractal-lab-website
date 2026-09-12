@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { ClerkProvider } from "@clerk/nextjs";
+import { clerkEnabled } from "@/lib/auth";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -10,7 +12,7 @@ export const metadata: Metadata = {
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  return (
+  const inner = (
     <html lang="en">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -27,4 +29,5 @@ export default function RootLayout({
       <body>{children}</body>
     </html>
   );
+  return clerkEnabled ? <ClerkProvider>{inner}</ClerkProvider> : inner;
 }

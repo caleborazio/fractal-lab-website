@@ -1,10 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { extractMeasurements } from "@/lib/gemini";
 import { fetchListing } from "@/lib/fetchListing";
+import { getUserId } from "@/lib/auth";
+import { checkUsage, recordUsage } from "@/lib/usage";
+import { PLUS_PRICE_LABEL } from "@/lib/plan";
 
 const MAX_TOTAL_IMAGES = 16;
 
 export async function POST(req: NextRequest) {
+  const userId = await getUserId();
+  if (!userId) {
+    return NextResponse.json({ error: "Sign in to check a fit." }, { status: 401 });
+  }
+
+  const usage = await checkUsage(userId);
+  if (!usage.allowed) {
+    return NextResponse.json(
+      {
+        error: `You've used your ${usage.checksUsed} free checks this month. Upgrade to Mind the Fit Plus (${PLUS_PRICE_LABEL}/mo) for unlimited checks.`,
+        usage,
+      },
+      { status: 402 }
+    );
+  }
+
   try {
     const body = await req.json();
     const uploadedImages: { base64: string; mimeType: string }[] = body.images ?? [];
@@ -32,12 +51,17 @@ export async function POST(req: NextRequest) {
     }
 
     const result = await extractMeasurements(combinedImages, combinedText);
+    // Only a successful extraction burns a free check -- a blocked/failed
+    // fetch shouldn't cost someone part of their monthly allowance.
+    await recordUsage(userId);
+    const updatedUsage = await checkUsage(userId);
+
     // Echo back what was actually sent so the UI can show thumbnails --
     // the clearest way to catch a wrong-listing/mixed-photos scrape.
     const usedImages = combinedImages.map((img) => ({
       dataUrl: `data:${img.mimeType};base64,${img.base64}`,
     }));
-    return NextResponse.json({ result, usedImages });
+    return NextResponse.json({ result, usedImages, usage: updatedUsage });
   } catch (err) {
     console.error("extract error", err);
     return NextResponse.json(

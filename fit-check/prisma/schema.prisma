@@ -8,14 +8,20 @@ datasource db {
 }
 
 model Profile {
-  id        String     @id @default(cuid())
-  bust      Float
-  waist     Float
-  hip       Float
-  height    Float?
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  checks    FitCheck[]
+  id                  String     @id // Clerk user id ("dev-user" in dev-bypass mode)
+  bust                Float
+  waist               Float
+  hip                 Float
+  height              Float?
+  plan                String     @default("free") // "free" | "paid"
+  // Rolling usage counter for the free tier -- checksUsedThisMonth only
+  // means what it says while usageMonth matches the current "YYYY-MM";
+  // otherwise it's stale from a prior month and reads as 0 (see lib/usage.ts).
+  checksUsedThisMonth Int        @default(0)
+  usageMonth          String     @default("")
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+  checks              FitCheck[]
 }
 
 model FitCheck {

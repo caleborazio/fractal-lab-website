@@ -1,19 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
-
-const COOKIE = "ffc_profile";
+import { getUserId } from "@/lib/auth";
+import { checkUsage } from "@/lib/usage";
 
 export async function GET() {
-  const jar = await cookies();
-  const id = jar.get(COOKIE)?.value;
-  if (!id) return NextResponse.json({ profile: null });
+  const userId = await getUserId();
+  if (!userId) return NextResponse.json({ profile: null, usage: null }, { status: 401 });
 
-  const profile = await prisma.profile.findUnique({ where: { id } });
-  return NextResponse.json({ profile });
+  const profile = await prisma.profile.findUnique({ where: { id: userId } });
+  const usage = await checkUsage(userId);
+  return NextResponse.json({ profile, usage });
 }
 
 export async function POST(req: NextRequest) {
+  const userId = await getUserId();
+  if (!userId) {
+    return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+  }
+
   const body = await req.json();
   const { bust, waist, hip, height } = body;
 
@@ -28,24 +32,11 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const jar = await cookies();
-  const existingId = jar.get(COOKIE)?.value;
-
-  const profile = existingId
-    ? await prisma.profile.update({
-        where: { id: existingId },
-        data: { bust, waist, hip, height: height ?? null },
-      })
-    : await prisma.profile.create({
-        data: { bust, waist, hip, height: height ?? null },
-      });
-
-  const res = NextResponse.json({ profile });
-  res.cookies.set(COOKIE, profile.id, {
-    httpOnly: true,
-    sameSite: "lax",
-    maxAge: 60 * 60 * 24 * 365,
-    path: "/",
+  const profile = await prisma.profile.upsert({
+    where: { id: userId },
+    update: { bust, waist, hip, height: height ?? null },
+    create: { id: userId, bust, waist, hip, height: height ?? null },
   });
-  return res;
+
+  return NextResponse.json({ profile });
 }

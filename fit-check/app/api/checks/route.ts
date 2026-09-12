@@ -1,16 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
-
-const COOKIE = "ffc_profile";
+import { getUserId } from "@/lib/auth";
 
 export async function GET() {
-  const jar = await cookies();
-  const profileId = jar.get(COOKIE)?.value;
-  if (!profileId) return NextResponse.json({ checks: [] });
+  const userId = await getUserId();
+  if (!userId) return NextResponse.json({ checks: [] });
 
   const checks = await prisma.fitCheck.findMany({
-    where: { profileId },
+    where: { profileId: userId },
     orderBy: { createdAt: "desc" },
     take: 20,
   });
@@ -18,10 +15,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const jar = await cookies();
-  const profileId = jar.get(COOKIE)?.value;
-  if (!profileId) {
-    return NextResponse.json({ error: "No profile yet." }, { status: 400 });
+  const userId = await getUserId();
+  if (!userId) {
+    return NextResponse.json({ error: "Sign in first." }, { status: 401 });
   }
 
   const body = await req.json();
@@ -40,7 +36,7 @@ export async function POST(req: NextRequest) {
 
   const check = await prisma.fitCheck.create({
     data: {
-      profileId,
+      profileId: userId,
       brand: brand ?? null,
       garmentType: garmentType ?? "dress",
       sourceUrl: sourceUrl ?? null,
