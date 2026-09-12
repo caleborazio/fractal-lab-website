@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BodyProfile,
   DimensionVerdict,
@@ -8,11 +8,12 @@ import {
   READING_LABEL,
   computeVerdict,
   estimateHemPlacement,
+  summarizeVerdict,
 } from "@/lib/fit";
 import type { ExtractionResult } from "@/lib/gemini";
 import { MeasurementGuide } from "@/components/MeasurementGuide";
 
-type Step = "loading" | "profile" | "submit" | "extracting" | "confirm" | "verdict";
+type Step = "loading" | "profile" | "submit" | "extracting" | "result";
 
 interface ImageAttachment {
   base64: string;
@@ -61,11 +62,22 @@ export default function Home() {
 
   const [extraction, setExtraction] = useState<ExtractionResult | null>(null);
   const [usedImages, setUsedImages] = useState<string[]>([]);
-  const [verdict, setVerdict] = useState<DimensionVerdict[] | null>(null);
-  const [checkId, setCheckId] = useState<string | null>(null);
   const [feedbackSent, setFeedbackSent] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Recomputed live on every edit -- no separate "confirm, then see the
+  // verdict" step. Editing a field immediately updates the read below it.
+  const verdict = useMemo(
+    () => (profile && extraction ? computeVerdict(profile, extraction) : null),
+    [profile, extraction]
+  );
+  const overall = useMemo(() => (verdict ? summarizeVerdict(verdict) : null), [verdict]);
+  const hem = useMemo(
+    () => estimateHemPlacement(profile?.height, extraction?.length),
+    [profile?.height, extraction?.length]
+  );
 
   useEffect(() => {
     fetch("/api/profile")
@@ -136,7 +148,7 @@ export default function Home() {
       if (!res.ok) throw new Error(data.error ?? "Extraction failed");
       setExtraction(data.result);
       setUsedImages((data.usedImages ?? []).map((img: { dataUrl: string }) => img.dataUrl));
-      setStep("confirm");
+      setStep("result");
     } catch {
       setError("Couldn't read that listing. Try a clearer photo of the tag or measurements.");
       setStep("submit");
@@ -164,51 +176,34 @@ export default function Home() {
     setExtraction({ ...extraction, [field]: value as MeasurementConvention });
   }
 
-  async function confirmAndSeeVerdict() {
-    if (!profile || !extraction) return;
-    const v = computeVerdict(profile, extraction);
-    setVerdict(v);
-    // The verdict itself never depends on persistence succeeding -- show it either way.
-    setStep("verdict");
-
+  async function sendFeedback(actualFit: string) {
+    if (!extraction || !verdict) return;
+    setSaving(true);
     try {
-      const byDimension = Object.fromEntries(v.map((d) => [d.dimension, d]));
+      const byDimension = Object.fromEntries(verdict.map((d) => [d.dimension, d]));
       const res = await fetch("/api/checks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           brand: extraction.brand,
           garmentType: extraction.garmentType,
-          // Store the resolved circumference-equivalent, not the raw stated
-          // number, so bust/waist/hip are directly comparable across records later.
+          // Resolved circumference-equivalent (post any edits), not the raw
+          // stated number -- this is the final, person-corrected label.
           bust: byDimension.bust?.garment ?? null,
           waist: byDimension.waist?.garment ?? null,
           hip: byDimension.hip?.garment ?? null,
           length: extraction.length,
           rawExtraction: extraction,
-          verdict: v,
+          verdict,
+          actualFit,
         }),
-      });
-      if (!res.ok) return;
-      const data = await res.json();
-      setCheckId(data.check?.id ?? null);
-    } catch {
-      // Non-fatal: the user already has their verdict, we just couldn't save it for the feedback loop.
-    }
-  }
-
-  async function sendFeedback(actualFit: string) {
-    if (!checkId) return;
-    try {
-      const res = await fetch(`/api/checks/${checkId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ actualFit }),
       });
       if (!res.ok) throw new Error();
       setFeedbackSent(true);
     } catch {
       setError("Couldn't save that feedback, but thanks for checking anyway.");
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -217,8 +212,6 @@ export default function Home() {
     setListingText("");
     setExtraction(null);
     setUsedImages([]);
-    setVerdict(null);
-    setCheckId(null);
     setFeedbackSent(false);
     setError(null);
     setStep("submit");
@@ -369,9 +362,22 @@ export default function Home() {
         </section>
       )}
 
-      {step === "confirm" && extraction && (
+      {step === "result" && extraction && verdict && overall && (
         <section>
-          <h1 className="mb-2 text-2xl font-semibold">Does this look right?</h1>
+          <h1 className="mb-3 text-2xl font-semibold">Here&apos;s the read</h1>
+
+          <div
+            className={
+              "mb-4 rounded border px-4 py-3 text-base font-medium " +
+              (overall.tone === "good"
+                ? "border-good bg-good-bg text-good"
+                : overall.tone === "warn"
+                ? "border-warn bg-warn-bg text-warn"
+                : "border-line bg-bg-alt text-ink-soft")
+            }
+          >
+            {overall.headline}
+          </div>
 
           {extraction.summary && (
             <p className="mb-4 rounded border border-line bg-panel px-4 py-3 text-sm text-ink-soft">
@@ -409,105 +415,7 @@ export default function Home() {
             </div>
           )}
 
-          <div className="flex flex-col gap-4">
-            <div className="flex gap-3">
-              <label className="flex flex-1 flex-col gap-1">
-                <span className="font-mono text-xs uppercase tracking-wide text-ink-faint">brand</span>
-                <input
-                  className="rounded border border-line bg-panel px-3 py-2"
-                  value={extraction.brand ?? ""}
-                  onChange={(e) => updateExtractionField("brand", e.target.value)}
-                />
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="font-mono text-xs uppercase tracking-wide text-ink-faint">
-                  size (as listed)
-                </span>
-                <input
-                  className="w-28 rounded border border-line bg-panel px-3 py-2"
-                  value={extraction.size ?? ""}
-                  placeholder="no data"
-                  onChange={(e) => updateExtractionField("size", e.target.value)}
-                />
-              </label>
-            </div>
-
-            {(["bust", "waist", "hip"] as const).map((field) => (
-              <div key={field} className="flex flex-col gap-1">
-                <span className="font-mono text-xs uppercase tracking-wide text-ink-faint">
-                  {field} ({extraction.unit})
-                </span>
-                <div className="flex gap-2">
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    className="w-24 rounded border border-line bg-panel px-3 py-2"
-                    value={extraction[field] ?? ""}
-                    onChange={(e) => updateExtractionField(field, e.target.value)}
-                    placeholder="no data"
-                  />
-                  <select
-                    className="flex-1 rounded border border-line bg-panel px-2 py-2 text-sm text-ink-soft"
-                    value={extraction[`${field}Convention`] ?? "unknown"}
-                    onChange={(e) =>
-                      updateConvention(`${field}Convention` as const, e.target.value)
-                    }
-                  >
-                    <option value="circumference">full circumference (all the way around)</option>
-                    <option value="flat_half">flat / half (e.g. pit-to-pit)</option>
-                    <option value="unknown">not sure</option>
-                  </select>
-                </div>
-              </div>
-            ))}
-
-            <label className="flex flex-col gap-1">
-              <span className="font-mono text-xs uppercase tracking-wide text-ink-faint">
-                length ({extraction.unit})
-              </span>
-              <input
-                type="number"
-                inputMode="decimal"
-                className="rounded border border-line bg-panel px-3 py-2"
-                value={extraction.length ?? ""}
-                onChange={(e) => updateExtractionField("length", e.target.value)}
-                placeholder="no data"
-              />
-            </label>
-          </div>
-
-          <button
-            onClick={confirmAndSeeVerdict}
-            className="mt-6 rounded bg-accent px-5 py-3 font-medium text-bg hover:bg-accent-strong"
-          >
-            Looks right — check the fit
-          </button>
-        </section>
-      )}
-
-      {step === "verdict" && verdict && (
-        <section>
-          <h1 className="mb-2 text-2xl font-semibold">Here&apos;s the read</h1>
-
-          {extraction?.summary && (
-            <p className="mb-4 rounded border border-line bg-panel px-4 py-3 text-sm text-ink-soft">
-              {extraction.summary}
-            </p>
-          )}
-
-          {(extraction?.size || extraction?.fitNotes) && (
-            <p className="mb-6 text-sm text-ink-soft">
-              {extraction?.size && (
-                <>
-                  Listed size: <strong className="text-ink">{extraction.size}</strong>
-                  {extraction?.fitNotes && " — "}
-                </>
-              )}
-              {extraction?.fitNotes}
-            </p>
-          )}
-
-          <div className="flex flex-col gap-3">
+          <div className="mb-6 flex flex-col gap-3">
             {verdict.map((v) => {
               const tone = readingTone(v.reading);
               return (
@@ -542,27 +450,98 @@ export default function Home() {
                 </div>
               );
             })}
-            {extraction?.length != null && (
+            {extraction.length != null && (
               <p className="mt-2 text-sm text-ink-soft">
                 Garment length: <strong className="text-ink">{extraction.length}&quot;</strong>
-                {(() => {
-                  const hem = estimateHemPlacement(profile?.height, extraction.length);
-                  if (hem) {
-                    return (
-                      <>
-                        {" "}
-                        — rough guess: <strong className="text-ink">{hem.label}</strong>.{" "}
-                        <span className="text-ink-faint">{hem.detail}</span>
-                      </>
-                    );
-                  }
-                  return " — worth comparing to where you'd want it to hit. Add your height in your profile for a rough guess at exactly that.";
-                })()}
+                {hem ? (
+                  <>
+                    {" "}
+                    — rough guess: <strong className="text-ink">{hem.label}</strong>.{" "}
+                    <span className="text-ink-faint">{hem.detail}</span>
+                  </>
+                ) : (
+                  " — worth comparing to where you'd want it to hit. Add your height in your profile for a rough guess at exactly that."
+                )}
               </p>
             )}
           </div>
 
-          <div className="mt-8 rounded border border-line bg-panel px-4 py-4">
+          <details className="mb-6 rounded border border-line bg-panel">
+            <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-ink-soft hover:text-ink">
+              Doesn&apos;t look right? Edit what was found
+            </summary>
+            <div className="flex flex-col gap-4 border-t border-line px-4 py-4">
+              <div className="flex gap-3">
+                <label className="flex flex-1 flex-col gap-1">
+                  <span className="font-mono text-xs uppercase tracking-wide text-ink-faint">brand</span>
+                  <input
+                    className="rounded border border-line bg-bg px-3 py-2"
+                    value={extraction.brand ?? ""}
+                    onChange={(e) => updateExtractionField("brand", e.target.value)}
+                  />
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="font-mono text-xs uppercase tracking-wide text-ink-faint">
+                    size (as listed)
+                  </span>
+                  <input
+                    className="w-28 rounded border border-line bg-bg px-3 py-2"
+                    value={extraction.size ?? ""}
+                    placeholder="no data"
+                    onChange={(e) => updateExtractionField("size", e.target.value)}
+                  />
+                </label>
+              </div>
+
+              {(["bust", "waist", "hip"] as const).map((field) => (
+                <div key={field} className="flex flex-col gap-1">
+                  <span className="font-mono text-xs uppercase tracking-wide text-ink-faint">
+                    {field} ({extraction.unit})
+                  </span>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      className="w-24 rounded border border-line bg-bg px-3 py-2"
+                      value={extraction[field] ?? ""}
+                      onChange={(e) => updateExtractionField(field, e.target.value)}
+                      placeholder="no data"
+                    />
+                    <select
+                      className="flex-1 rounded border border-line bg-bg px-2 py-2 text-sm text-ink-soft"
+                      value={extraction[`${field}Convention`] ?? "unknown"}
+                      onChange={(e) =>
+                        updateConvention(`${field}Convention` as const, e.target.value)
+                      }
+                    >
+                      <option value="circumference">full circumference (all the way around)</option>
+                      <option value="flat_half">flat / half (e.g. pit-to-pit)</option>
+                      <option value="unknown">not sure</option>
+                    </select>
+                  </div>
+                </div>
+              ))}
+
+              <label className="flex flex-col gap-1">
+                <span className="font-mono text-xs uppercase tracking-wide text-ink-faint">
+                  length ({extraction.unit})
+                </span>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  className="rounded border border-line bg-bg px-3 py-2"
+                  value={extraction.length ?? ""}
+                  onChange={(e) => updateExtractionField("length", e.target.value)}
+                  placeholder="no data"
+                />
+              </label>
+              <p className="text-xs text-ink-faint">
+                Changes here update the read above immediately.
+              </p>
+            </div>
+          </details>
+
+          <div className="rounded border border-line bg-panel px-4 py-4">
             {feedbackSent ? (
               <p className="text-sm text-pine">Thanks — that helps tune future reads.</p>
             ) : (
@@ -572,8 +551,9 @@ export default function Home() {
                   {["tight", "perfect", "loose", "didn't buy it"].map((opt) => (
                     <button
                       key={opt}
+                      disabled={saving}
                       onClick={() => sendFeedback(opt)}
-                      className="rounded border border-line-strong px-3 py-1.5 text-sm hover:border-accent hover:text-accent"
+                      className="rounded border border-line-strong px-3 py-1.5 text-sm hover:border-accent hover:text-accent disabled:opacity-50"
                     >
                       {opt}
                     </button>

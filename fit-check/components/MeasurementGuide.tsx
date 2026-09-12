@@ -8,27 +8,41 @@ export function MeasurementGuide() {
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
+        strokeLinejoin="round"
         aria-hidden="true"
       >
-        {/* head */}
-        <circle cx="80" cy="22" r="15" />
-        {/* neck */}
-        <line x1="80" y1="37" x2="80" y2="46" />
-        {/* body outline: shoulders -> torso -> hips -> legs -> feet */}
-        <path d="M48 54 Q80 45 112 54 L120 118 Q114 148 120 172 L110 244 L94 244 L90 172 L70 172 L66 244 L50 244 L40 172 Q46 148 40 118 Z" />
+        {/* head + neck */}
+        <circle cx="80" cy="18" r="13" />
+        <line x1="80" y1="31" x2="80" y2="42" />
+
+        {/* torso + legs, one smooth outline */}
+        <path
+          d="M48,50 L112,50
+             C120,64 120,72 120,84
+             C120,104 110,120 98,134
+             C110,148 116,158 116,170
+             L102,172 L102,250 L84,250 L84,192 L72,192 L72,250 L54,250 L54,172
+             L40,170
+             C40,158 46,148 58,134
+             C46,120 36,104 36,84
+             C36,72 36,64 48,50
+             Z"
+        />
+
         {/* arms */}
-        <path d="M48 54 L32 130 L37 140" />
-        <path d="M112 54 L128 130 L123 140" />
+        <path d="M48,50 C36,70 32,95 36,122 C38,132 40,140 42,147" />
+        <path d="M112,50 C124,70 128,95 124,122 C122,132 120,140 118,147" />
+
         {/* feet */}
-        <line x1="94" y1="244" x2="98" y2="253" />
-        <line x1="50" y1="244" x2="46" y2="253" />
+        <line x1="84" y1="250" x2="88" y2="259" />
+        <line x1="54" y1="250" x2="50" y2="259" />
 
         {/* bust line */}
         <line x1="14" y1="82" x2="146" y2="82" strokeDasharray="4 3" className="text-accent" />
         {/* waist line */}
-        <line x1="14" y1="132" x2="146" y2="132" strokeDasharray="4 3" className="text-pine" />
+        <line x1="14" y1="133" x2="146" y2="133" strokeDasharray="4 3" className="text-pine" />
         {/* hip line */}
-        <line x1="14" y1="168" x2="146" y2="168" strokeDasharray="4 3" className="text-accent" />
+        <line x1="14" y1="171" x2="146" y2="171" strokeDasharray="4 3" className="text-accent" />
       </svg>
       <div className="flex flex-col gap-2.5 text-xs leading-relaxed text-ink-soft">
         <p>

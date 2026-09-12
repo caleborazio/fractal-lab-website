@@ -209,15 +209,25 @@ function extractGeneric(
     .join("\n\n")
     .slice(0, 4000);
 
-  const candidateUrls: string[] = [];
-  if (typeof product?.image === "string") candidateUrls.push(product.image);
-  else if (Array.isArray(product?.image)) candidateUrls.push(...product.image);
+  // JSON-LD/og:image is the site's OWN declared photo for this exact listing
+  // -- authoritative. Scraping every <img> on the page is not: it happily
+  // picks up a seller's avatar, "similar items" thumbnails, or other listings
+  // entirely, since there's no per-listing scoping to rely on the way
+  // Poshmark's structured photo array has. Only fall back to page-wide <img>
+  // scraping when there's no authoritative image at all to go on.
+  const authoritativeUrls: string[] = [];
+  if (typeof product?.image === "string") authoritativeUrls.push(product.image);
+  else if (Array.isArray(product?.image)) authoritativeUrls.push(...product.image);
   const ogImage = $('meta[property="og:image"]').attr("content");
-  if (ogImage) candidateUrls.push(ogImage);
-  $("img").each((_, el) => {
-    const src = $(el).attr("src") || $(el).attr("data-src");
-    if (src) candidateUrls.push(src);
-  });
+  if (ogImage) authoritativeUrls.push(ogImage);
+
+  const candidateUrls: string[] = [...authoritativeUrls];
+  if (authoritativeUrls.length === 0) {
+    $("img").each((_, el) => {
+      const src = $(el).attr("src") || $(el).attr("data-src");
+      if (src) candidateUrls.push(src);
+    });
+  }
 
   const absoluteCandidates = candidateUrls
     .map((src) => {

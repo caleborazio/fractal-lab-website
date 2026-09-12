@@ -38,6 +38,43 @@ export const READING_LABEL: Record<FitReading, string> = {
   no_data: "No measurement to compare",
 };
 
+export interface OverallVerdict {
+  headline: string;
+  tone: "good" | "warn" | "neutral";
+}
+
+const DIMENSION_LABEL: Record<Dimension, string> = { bust: "bust", waist: "waist", hip: "hip" };
+
+/**
+ * One actionable line synthesizing all three dimensions, so a shopper isn't
+ * left to mentally combine three separate badges themselves.
+ */
+export function summarizeVerdict(verdicts: DimensionVerdict[]): OverallVerdict {
+  const withData = verdicts.filter((v) => v.reading !== "no_data");
+  if (withData.length === 0) {
+    return { headline: "Not enough measurements yet to say how this will fit.", tone: "neutral" };
+  }
+
+  const tightDims = withData.filter((v) => v.reading === "tight").map((v) => DIMENSION_LABEL[v.dimension]);
+  const looseDims = withData.filter((v) => v.reading === "loose").map((v) => DIMENSION_LABEL[v.dimension]);
+  const joinDims = (dims: string[]) =>
+    dims.length <= 1 ? dims.join("") : `${dims.slice(0, -1).join(", ")} and ${dims[dims.length - 1]}`;
+
+  if (tightDims.length === 0 && looseDims.length === 0) {
+    return { headline: "Looks like a good fit overall.", tone: "good" };
+  }
+  if (tightDims.length > 0 && looseDims.length > 0) {
+    return {
+      headline: `Mixed fit — snug through the ${joinDims(tightDims)}, loose through the ${joinDims(looseDims)}.`,
+      tone: "warn",
+    };
+  }
+  if (tightDims.length > 0) {
+    return { headline: `Will likely run tight through the ${joinDims(tightDims)}.`, tone: "warn" };
+  }
+  return { headline: `Will likely run loose through the ${joinDims(looseDims)}.`, tone: "warn" };
+}
+
 /**
  * Ease bands are a first-pass heuristic for a fitted vintage dress, in inches.
  * Tune these once real "how did it actually fit" feedback (see FitCheck.actualFit)
