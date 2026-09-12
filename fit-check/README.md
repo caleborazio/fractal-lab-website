@@ -1,4 +1,4 @@
-# Fit Check (Fractal Lab)
+# Mind the Fit (Fractal Lab)
 
 Proof-of-concept: upload a secondhand/vintage listing (photo of a tag, a seller's
 measurements, or a flat-lay) and find out if it'll actually fit you, without

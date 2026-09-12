@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Fit Check — Fractal Lab",
+  title: "Mind the Fit — Fractal Lab",
   description:
     "Upload a secondhand or vintage listing and find out if it'll actually fit you.",
 };

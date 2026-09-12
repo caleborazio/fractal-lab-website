@@ -227,7 +227,7 @@ export default function Home() {
           Fractal Lab
         </a>
         <span className="font-mono text-xs uppercase tracking-wider text-pine">
-          Fit Check · beta
+          Mind the Fit · beta
         </span>
       </header>
 
