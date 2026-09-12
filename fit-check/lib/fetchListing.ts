@@ -10,7 +10,10 @@ const BROWSER_UA =
 
 const PAGE_TIMEOUT_MS = 8000;
 const IMAGE_TIMEOUT_MS = 6000;
-const MAX_IMAGES = 4;
+// Poshmark allows up to 16 photos/listing; other resale sites are similar.
+// At ~1,000 Gemini tokens/image this is trivially cheap (~1 cent per check
+// even at 10 images), so cap on "diminishing returns" grounds, not cost.
+const MAX_IMAGES = 10;
 const MAX_IMAGE_BYTES = 6 * 1024 * 1024;
 
 // Site chrome (logos, icons, tracking pixels) that shows up in <img> tags

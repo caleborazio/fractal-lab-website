@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
       const fetched = await fetchListing(urlMatch[0]);
       if (fetched) {
         combinedText = [fetched.text, listingText].filter(Boolean).join("\n\n");
-        combinedImages = [...uploadedImages, ...fetched.images].slice(0, 4);
+        combinedImages = [...uploadedImages, ...fetched.images].slice(0, 10);
       }
       // If the fetch fails (blocked, timed out, nothing usable), fall through
       // with the original pasted text/images -- an honest "no data" beats a hard error.

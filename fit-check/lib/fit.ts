@@ -1,4 +1,5 @@
 export type Dimension = "bust" | "waist" | "hip";
+export type MeasurementConvention = "circumference" | "flat_half" | "unknown";
 
 export interface BodyProfile {
   bust: number;
@@ -9,8 +10,11 @@ export interface BodyProfile {
 
 export interface GarmentMeasurements {
   bust?: number | null;
+  bustConvention?: MeasurementConvention | null;
   waist?: number | null;
+  waistConvention?: MeasurementConvention | null;
   hip?: number | null;
+  hipConvention?: MeasurementConvention | null;
   length?: number | null;
 }
 
@@ -18,6 +22,8 @@ export type FitReading = "tight" | "fitted" | "comfortable" | "loose" | "no_data
 
 export interface DimensionVerdict {
   dimension: Dimension;
+  raw: number | null;
+  convention: MeasurementConvention | null;
   garment: number | null;
   body: number;
   ease: number | null;
@@ -44,18 +50,46 @@ function readingForEase(ease: number): FitReading {
   return "loose";
 }
 
-export function computeVerdict(
-  body: BodyProfile,
-  garment: GarmentMeasurements
-): DimensionVerdict[] {
+/**
+ * Garments are usually measured flat (front layer over back), so a stated
+ * bust/waist/hip number is often HALF the actual circumference -- "pit to
+ * pit" being the classic example. Doubling only happens when we're confident
+ * that's the convention; "unknown" is treated as already-circumference,
+ * since assuming a wrong double is a bigger, more confusing error than
+ * leaving it as stated (the raw number is always shown too, so a person can
+ * catch either mistake).
+ */
+function circumferenceEquivalent(
+  value: number | null | undefined,
+  convention: MeasurementConvention | null | undefined
+): number | null {
+  if (value == null || value <= 0) return null;
+  return convention === "flat_half" ? value * 2 : value;
+}
+
+export function computeVerdict(body: BodyProfile, garment: GarmentMeasurements): DimensionVerdict[] {
   const dims: Dimension[] = ["bust", "waist", "hip"];
+  const rawFor: Record<Dimension, number | null | undefined> = {
+    bust: garment.bust,
+    waist: garment.waist,
+    hip: garment.hip,
+  };
+  const conventionFor: Record<Dimension, MeasurementConvention | null | undefined> = {
+    bust: garment.bustConvention,
+    waist: garment.waistConvention,
+    hip: garment.hipConvention,
+  };
+
   return dims.map((dimension) => {
-    const g = garment[dimension];
+    const raw = rawFor[dimension] ?? null;
+    const convention = conventionFor[dimension] ?? null;
     const b = body[dimension];
-    if (g == null || g <= 0) {
-      return { dimension, garment: null, body: b, ease: null, reading: "no_data" };
+    const g = circumferenceEquivalent(raw, convention);
+
+    if (g == null) {
+      return { dimension, raw, convention, garment: null, body: b, ease: null, reading: "no_data" };
     }
     const ease = g - b;
-    return { dimension, garment: g, body: b, ease, reading: readingForEase(ease) };
+    return { dimension, raw, convention, garment: g, body: b, ease, reading: readingForEase(ease) };
   });
 }

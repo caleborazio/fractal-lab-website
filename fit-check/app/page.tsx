@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   BodyProfile,
   DimensionVerdict,
+  MeasurementConvention,
   READING_LABEL,
   computeVerdict,
 } from "@/lib/fit";
@@ -35,6 +36,12 @@ function readingTone(reading: DimensionVerdict["reading"]) {
   if (reading === "no_data") return "neutral";
   return "warn";
 }
+
+const CONVENTION_LABEL: Record<MeasurementConvention, string> = {
+  circumference: "stated as full circumference",
+  flat_half: "flat/half — doubled for comparison",
+  unknown: "convention unclear",
+};
 
 export default function Home() {
   const [step, setStep] = useState<Step>("loading");
@@ -100,9 +107,9 @@ export default function Home() {
 
   async function handleFiles(fileList: FileList | null) {
     if (!fileList) return;
-    const files = Array.from(fileList).slice(0, 3);
+    const files = Array.from(fileList).slice(0, 10);
     const attachments = await Promise.all(files.map(fileToAttachment));
-    setImages((prev) => [...prev, ...attachments].slice(0, 3));
+    setImages((prev) => [...prev, ...attachments].slice(0, 10));
   }
 
   async function checkFit() {
@@ -145,6 +152,14 @@ export default function Home() {
     setExtraction({ ...extraction, [field]: num });
   }
 
+  function updateConvention(
+    field: "bustConvention" | "waistConvention" | "hipConvention",
+    value: string
+  ) {
+    if (!extraction) return;
+    setExtraction({ ...extraction, [field]: value as MeasurementConvention });
+  }
+
   async function confirmAndSeeVerdict() {
     if (!profile || !extraction) return;
     const v = computeVerdict(profile, extraction);
@@ -153,15 +168,18 @@ export default function Home() {
     setStep("verdict");
 
     try {
+      const byDimension = Object.fromEntries(v.map((d) => [d.dimension, d]));
       const res = await fetch("/api/checks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           brand: extraction.brand,
           garmentType: extraction.garmentType,
-          bust: extraction.bust,
-          waist: extraction.waist,
-          hip: extraction.hip,
+          // Store the resolved circumference-equivalent, not the raw stated
+          // number, so bust/waist/hip are directly comparable across records later.
+          bust: byDimension.bust?.garment ?? null,
+          waist: byDimension.waist?.garment ?? null,
+          hip: byDimension.hip?.garment ?? null,
           length: extraction.length,
           rawExtraction: extraction,
           verdict: v,
@@ -288,7 +306,7 @@ export default function Home() {
               hidden
               onChange={(e) => handleFiles(e.target.files)}
             />
-            <p className="font-medium">Drop or tap to upload 1–3 photos</p>
+            <p className="font-medium">Drop or tap to upload up to 10 photos</p>
             <p className="text-sm text-ink-faint">tag, measurements card, or flat-lay</p>
           </div>
 
@@ -343,6 +361,13 @@ export default function Home() {
       {step === "confirm" && extraction && (
         <section>
           <h1 className="mb-2 text-2xl font-semibold">Does this look right?</h1>
+
+          {extraction.summary && (
+            <p className="mb-4 rounded border border-line bg-panel px-4 py-3 text-sm text-ink-soft">
+              {extraction.summary}
+            </p>
+          )}
+
           <p className="mb-4 text-sm text-ink-faint">
             Confidence: <strong className="text-ink">{extraction.confidence}</strong>
             {extraction.readFrom && <> — read from &quot;{extraction.readFrom}&quot;</>}
@@ -357,21 +382,49 @@ export default function Home() {
                 onChange={(e) => updateExtractionField("brand", e.target.value)}
               />
             </label>
-            {(["bust", "waist", "hip", "length"] as const).map((field) => (
-              <label key={field} className="flex flex-col gap-1">
+
+            {(["bust", "waist", "hip"] as const).map((field) => (
+              <div key={field} className="flex flex-col gap-1">
                 <span className="font-mono text-xs uppercase tracking-wide text-ink-faint">
                   {field} ({extraction.unit})
                 </span>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  className="rounded border border-line bg-panel px-3 py-2"
-                  value={extraction[field] ?? ""}
-                  onChange={(e) => updateExtractionField(field, e.target.value)}
-                  placeholder="no data"
-                />
-              </label>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    className="w-24 rounded border border-line bg-panel px-3 py-2"
+                    value={extraction[field] ?? ""}
+                    onChange={(e) => updateExtractionField(field, e.target.value)}
+                    placeholder="no data"
+                  />
+                  <select
+                    className="flex-1 rounded border border-line bg-panel px-2 py-2 text-sm text-ink-soft"
+                    value={extraction[`${field}Convention`] ?? "unknown"}
+                    onChange={(e) =>
+                      updateConvention(`${field}Convention` as const, e.target.value)
+                    }
+                  >
+                    <option value="circumference">full circumference (all the way around)</option>
+                    <option value="flat_half">flat / half (e.g. pit-to-pit)</option>
+                    <option value="unknown">not sure</option>
+                  </select>
+                </div>
+              </div>
             ))}
+
+            <label className="flex flex-col gap-1">
+              <span className="font-mono text-xs uppercase tracking-wide text-ink-faint">
+                length ({extraction.unit})
+              </span>
+              <input
+                type="number"
+                inputMode="decimal"
+                className="rounded border border-line bg-panel px-3 py-2"
+                value={extraction.length ?? ""}
+                onChange={(e) => updateExtractionField("length", e.target.value)}
+                placeholder="no data"
+              />
+            </label>
           </div>
 
           <button
@@ -385,7 +438,13 @@ export default function Home() {
 
       {step === "verdict" && verdict && (
         <section>
-          <h1 className="mb-6 text-2xl font-semibold">Here&apos;s the read</h1>
+          <h1 className="mb-2 text-2xl font-semibold">Here&apos;s the read</h1>
+
+          {extraction?.summary && (
+            <p className="mb-6 rounded border border-line bg-panel px-4 py-3 text-sm text-ink-soft">
+              {extraction.summary}
+            </p>
+          )}
 
           <div className="flex flex-col gap-3">
             {verdict.map((v) => {
@@ -393,14 +452,22 @@ export default function Home() {
               return (
                 <div
                   key={v.dimension}
-                  className="flex items-center justify-between rounded border border-line bg-panel px-4 py-3"
+                  className="flex items-center justify-between gap-3 rounded border border-line bg-panel px-4 py-3"
                 >
-                  <span className="font-mono text-sm uppercase tracking-wide text-ink-faint">
-                    {v.dimension}
-                  </span>
+                  <div>
+                    <span className="font-mono text-sm uppercase tracking-wide text-ink-faint">
+                      {v.dimension}
+                    </span>
+                    {v.raw != null && v.convention && (
+                      <p className="text-xs text-ink-faint">
+                        stated {v.raw}&quot; — {CONVENTION_LABEL[v.convention]}
+                        {v.convention === "flat_half" && ` (→ ${v.garment}")`}
+                      </p>
+                    )}
+                  </div>
                   <span
                     className={
-                      "rounded-full px-3 py-1 font-mono text-xs " +
+                      "whitespace-nowrap rounded-full px-3 py-1 font-mono text-xs " +
                       (tone === "good"
                         ? "bg-good-bg text-good"
                         : tone === "warn"
