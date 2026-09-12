@@ -7,8 +7,10 @@ import {
   MeasurementConvention,
   READING_LABEL,
   computeVerdict,
+  estimateHemPlacement,
 } from "@/lib/fit";
 import type { ExtractionResult } from "@/lib/gemini";
+import { MeasurementGuide } from "@/components/MeasurementGuide";
 
 type Step = "loading" | "profile" | "submit" | "extracting" | "confirm" | "verdict";
 
@@ -243,10 +245,13 @@ export default function Home() {
       {step === "profile" && (
         <section>
           <h1 className="mb-2 text-3xl font-semibold">Quick one-time setup</h1>
-          <p className="mb-6 max-w-prose text-ink-soft">
+          <p className="mb-4 max-w-prose text-ink-soft">
             Four numbers, just for you — never shared. This is what every fit-check
             gets compared against.
           </p>
+
+          <MeasurementGuide />
+
           <div className="flex flex-col gap-4">
             {(["bust", "waist", "hip"] as const).map((field) => (
               <label key={field} className="flex flex-col gap-1">
@@ -266,7 +271,7 @@ export default function Home() {
             ))}
             <label className="flex flex-col gap-1">
               <span className="font-mono text-xs uppercase tracking-wide text-ink-faint">
-                height (inches) — optional
+                height (inches) — optional, but unlocks a guess at where a hem would hit you
               </span>
               <input
                 type="number"
@@ -277,6 +282,9 @@ export default function Home() {
                   setProfileDraft({ ...profileDraft, height: e.target.value })
                 }
               />
+              <span className="text-xs text-ink-faint">
+                Stand straight, no shoes — the usual way you&apos;d check your height against a wall.
+              </span>
             </label>
           </div>
           {error && <p className="mt-3 text-sm text-bad">{error}</p>}
@@ -536,8 +544,20 @@ export default function Home() {
             })}
             {extraction?.length != null && (
               <p className="mt-2 text-sm text-ink-soft">
-                Garment length: <strong className="text-ink">{extraction.length}&quot;</strong> — worth
-                comparing to where you&apos;d want it to hit.
+                Garment length: <strong className="text-ink">{extraction.length}&quot;</strong>
+                {(() => {
+                  const hem = estimateHemPlacement(profile?.height, extraction.length);
+                  if (hem) {
+                    return (
+                      <>
+                        {" "}
+                        — rough guess: <strong className="text-ink">{hem.label}</strong>.{" "}
+                        <span className="text-ink-faint">{hem.detail}</span>
+                      </>
+                    );
+                  }
+                  return " — worth comparing to where you'd want it to hit. Add your height in your profile for a rough guess at exactly that.";
+                })()}
               </p>
             )}
           </div>

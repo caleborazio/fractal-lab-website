@@ -93,3 +93,60 @@ export function computeVerdict(body: BodyProfile, garment: GarmentMeasurements):
     return { dimension, raw, convention, garment: g, body: b, ease, reading: readingForEase(ease) };
   });
 }
+
+export interface HemEstimate {
+  label: string;
+  detail: string;
+}
+
+// Working anthropometric defaults, not lab-grade constants -- shoulder height
+// (acromion) averages roughly 0.82 x total standing height, knee height
+// roughly 0.30 x height, fairly consistently across sexes for this purpose
+// (per RoyMech's anthropometric tables / the commonly-cited Drillis & Contini
+// biomechanics ratios). Good enough for a rough "where would this hit me"
+// guide -- not precise enough to state as a hard fact.
+const SHOULDER_HEIGHT_RATIO = 0.82;
+const KNEE_HEIGHT_RATIO = 0.3;
+
+/**
+ * Garment length is conventionally stated shoulder-seam-to-hem. Given a
+ * person's total height, estimate where that hem lands relative to real
+ * body landmarks (ankle/knee/etc) rather than leaving them to guess from a
+ * bare number -- explicitly a rough estimate, worded that way throughout.
+ */
+export function estimateHemPlacement(
+  heightIn: number | null | undefined,
+  garmentLengthIn: number | null | undefined
+): HemEstimate | null {
+  if (!heightIn || heightIn <= 0 || !garmentLengthIn || garmentLengthIn <= 0) return null;
+
+  const shoulderToFloor = heightIn * SHOULDER_HEIGHT_RATIO;
+  const kneeFromFloor = heightIn * KNEE_HEIGHT_RATIO;
+  const hemFromFloor = shoulderToFloor - garmentLengthIn;
+
+  if (hemFromFloor <= -1.5) {
+    return {
+      label: "longer than floor-length on you",
+      detail: `Roughly ${Math.abs(hemFromFloor).toFixed(0)}" of extra length would likely pool or drag on the floor.`,
+    };
+  }
+  if (hemFromFloor <= 1.5) {
+    return { label: "floor-length on you", detail: "Would likely just graze or touch the floor." };
+  }
+  if (hemFromFloor <= kneeFromFloor * 0.4) {
+    return { label: "around your ankle", detail: "Would likely hit right around your ankle." };
+  }
+  if (hemFromFloor <= kneeFromFloor * 0.75) {
+    return { label: "mid-calf on you", detail: "Would likely hit somewhere mid-calf." };
+  }
+  if (hemFromFloor <= kneeFromFloor * 1.15) {
+    return { label: "around your knee", detail: "Would likely hit right around your knee." };
+  }
+  if (hemFromFloor <= kneeFromFloor * 1.6) {
+    return { label: "above your knee", detail: "Would likely hit a few inches above your knee." };
+  }
+  return {
+    label: "well above your knee",
+    detail: "Would likely hit well above the knee -- a short length on you.",
+  };
+}
