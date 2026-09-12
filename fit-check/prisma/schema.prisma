@@ -1,0 +1,39 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Profile {
+  id        String     @id @default(cuid())
+  bust      Float
+  waist     Float
+  hip       Float
+  height    Float?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  checks    FitCheck[]
+}
+
+model FitCheck {
+  id            String   @id @default(cuid())
+  profileId     String
+  profile       Profile  @relation(fields: [profileId], references: [id])
+  brand         String?
+  garmentType   String   @default("dress")
+  sourceUrl     String?
+  bust          Float?
+  waist         Float?
+  hip           Float?
+  length        Float?
+  rawExtraction Json?
+  verdict       Json?
+  confirmed     Boolean  @default(false)
+  actualFit     String?
+  createdAt     DateTime @default(now())
+
+  @@index([profileId])
+}

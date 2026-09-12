@@ -1,0 +1,96 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #eeefe9;
+  --bg-alt: #e3e5d9;
+  --panel: #e7e9dd;
+  --ink: #20241f;
+  --ink-soft: #4b5148;
+  --ink-faint: #767c6e;
+  --accent: #8a6112;
+  --accent-strong: #6e4c14;
+  --accent-bg: #ddbd74;
+  --pine: #2f4a41;
+  --pine-soft: #4e6c61;
+  --line: #c9cbbd;
+  --line-strong: #a9ac98;
+  --good: #3f6b4a;
+  --good-bg: #dce6da;
+  --warn: #95592f;
+  --warn-bg: #eadcc7;
+  --bad: #8b4040;
+  --bad-bg: #e8d6d3;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #15170f;
+    --bg-alt: #1d2016;
+    --panel: #1b1e14;
+    --ink: #edead9;
+    --ink-soft: #b7baa8;
+    --ink-faint: #82866f;
+    --accent: #e7b655;
+    --accent-strong: #f0c36a;
+    --accent-bg: #3c3216;
+    --pine: #7fb09c;
+    --pine-soft: #5c8b7a;
+    --line: #33362a;
+    --line-strong: #454939;
+    --good: #7cb388;
+    --good-bg: #243024;
+    --warn: #d19867;
+    --warn-bg: #332a1c;
+    --bad: #d18a8a;
+    --bad-bg: #332221;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-alt: var(--bg-alt);
+  --color-panel: var(--panel);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-bg: var(--accent-bg);
+  --color-pine: var(--pine);
+  --color-pine-soft: var(--pine-soft);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-good: var(--good);
+  --color-good-bg: var(--good-bg);
+  --color-warn: var(--warn);
+  --color-warn-bg: var(--warn-bg);
+  --color-bad: var(--bad);
+  --color-bad-bg: var(--bad-bg);
+  --font-display: "Fraunces", Georgia, serif;
+  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  line-height: 1.5;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  text-wrap: balance;
+}
+
+input[type="number"],
+input[type="text"],
+input[type="url"] {
+  font-family: var(--font-sans);
+}
