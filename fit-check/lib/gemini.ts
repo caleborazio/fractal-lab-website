@@ -5,6 +5,7 @@ export type MeasurementConvention = "circumference" | "flat_half" | "unknown";
 export interface ExtractionResult {
   brand: string | null;
   garmentType: string;
+  size: string | null;
   bust: number | null;
   bustConvention: MeasurementConvention | null;
   waist: number | null;
@@ -13,6 +14,7 @@ export interface ExtractionResult {
   hipConvention: MeasurementConvention | null;
   length: number | null;
   unit: "in" | "cm";
+  fitNotes: string | null;
   readFrom: string | null;
   confidence: "high" | "medium" | "low";
   summary: string;
@@ -29,6 +31,7 @@ const responseSchema = {
   properties: {
     brand: { type: SchemaType.STRING, nullable: true },
     garmentType: { type: SchemaType.STRING },
+    size: { type: SchemaType.STRING, nullable: true },
     bust: { type: SchemaType.NUMBER, nullable: true },
     bustConvention: conventionSchema,
     waist: { type: SchemaType.NUMBER, nullable: true },
@@ -37,6 +40,7 @@ const responseSchema = {
     hipConvention: conventionSchema,
     length: { type: SchemaType.NUMBER, nullable: true },
     unit: { type: SchemaType.STRING, enum: ["in", "cm"] },
+    fitNotes: { type: SchemaType.STRING, nullable: true },
     readFrom: { type: SchemaType.STRING, nullable: true },
     confidence: { type: SchemaType.STRING, enum: ["high", "medium", "low"] },
     summary: { type: SchemaType.STRING },
@@ -55,15 +59,25 @@ If you genuinely cannot tell which convention was used, set convention to "unkno
 
 Only report a measurement if it is EXPLICITLY STATED somewhere -- on a tag, in a handwritten note, in listing text, or clearly readable in a photo. Do NOT estimate a measurement from the garment's visual proportions alone with no stated number or reference object.
 
+The listing text you're given may include a "Buyer/seller comments" section -- sellers very often answer exact measurement questions there even when the main description has none. Treat a seller's reply in the comments the same as listing text for sourcing a measurement.
+
+The listing's stated SIZE LABEL (e.g. "size 4", "US 6", "M") is a separate thing from actual measurements -- vintage and even some current sizing runs small/large/inconsistent relative to that label, which is the whole reason measurements matter more than the label. Report the size label if stated, but don't treat it as a substitute for a real measurement.
+
+Also look for descriptive language anywhere in the text that hints at how forgiving the fit is, even without numbers -- words like "stretchy," "rigid," "structured," "boning," "flowy," "true to size," "runs small," "runs large," "some give," "no stretch." Summarize this briefly as fitNotes if anything like this appears; null if nothing relevant is said.
+
+If the title and description seem to describe different garments (mismatched color, style, or details), or sizing info conflicts between two sources (e.g. the description says one number and a comment says another), say so explicitly in the summary rather than silently picking one -- this happens on real listings (sellers reusing a template description, or cross-posting mistakes) and the shopper should know if the source data itself looked inconsistent.
+
 Return:
 - brand: the brand name if visible, else null
 - garmentType: what kind of garment this is (default "dress" if unclear)
+- size: the stated size label if given (e.g. "4", "US 6", "M"), else null
 - bust, waist, hip: the RAW number exactly as stated (do not pre-double it), each with its own convention judgment (bustConvention, waistConvention, hipConvention)
 - length: garment length top-to-hem if stated (no convention ambiguity for this one)
 - unit: "in" or "cm" -- whichever unit the source used (assume "in" if ambiguous)
-- readFrom: a short quote or description of exactly where you read each number from (e.g. "tag says Bust 36in, Waist 30in" or "seller's description: '48 inches long, 16 inches bust (flexible)'")
+- fitNotes: a brief note on stretch/structure/fit-relevant language found in the text, else null
+- readFrom: a short quote or description of exactly where you read each number from (e.g. "tag says Bust 36in, Waist 30in" or "seller's description: '48 inches long, 16 inches bust (flexible)'" or "seller's comment reply: 'Pit: 15.5in, waist: 13in'")
 - confidence: "high" if numbers were printed/typed and clear, "medium" if handwritten or slightly unclear, "low" if you're unsure you read them correctly
-- summary: 2-4 plain-English sentences a shopper can quickly sanity-check -- what you found, which source each came from (a specific photo, the listing text, a tag), and call out explicitly any number you judged to be a flat/half measurement so they know it'll be doubled for comparison
+- summary: 2-4 plain-English sentences a shopper can quickly sanity-check -- what you found, which source each came from (a specific photo, the listing text, a comment, a tag), call out explicitly any number you judged to be a flat/half measurement so they know it'll be doubled for comparison, and flag any inconsistency you noticed between sources
 
 Respond with JSON only, matching the schema.`;
 

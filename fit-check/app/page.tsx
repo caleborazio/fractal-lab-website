@@ -58,6 +58,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
 
   const [extraction, setExtraction] = useState<ExtractionResult | null>(null);
+  const [usedImages, setUsedImages] = useState<string[]>([]);
   const [verdict, setVerdict] = useState<DimensionVerdict[] | null>(null);
   const [checkId, setCheckId] = useState<string | null>(null);
   const [feedbackSent, setFeedbackSent] = useState(false);
@@ -132,6 +133,7 @@ export default function Home() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Extraction failed");
       setExtraction(data.result);
+      setUsedImages((data.usedImages ?? []).map((img: { dataUrl: string }) => img.dataUrl));
       setStep("confirm");
     } catch {
       setError("Couldn't read that listing. Try a clearer photo of the tag or measurements.");
@@ -140,12 +142,12 @@ export default function Home() {
   }
 
   function updateExtractionField(
-    field: "bust" | "waist" | "hip" | "length" | "brand",
+    field: "bust" | "waist" | "hip" | "length" | "brand" | "size",
     value: string
   ) {
     if (!extraction) return;
-    if (field === "brand") {
-      setExtraction({ ...extraction, brand: value || null });
+    if (field === "brand" || field === "size") {
+      setExtraction({ ...extraction, [field]: value || null });
       return;
     }
     const num = value === "" ? null : parseFloat(value);
@@ -212,6 +214,7 @@ export default function Home() {
     setImages([]);
     setListingText("");
     setExtraction(null);
+    setUsedImages([]);
     setVerdict(null);
     setCheckId(null);
     setFeedbackSent(false);
@@ -373,15 +376,53 @@ export default function Home() {
             {extraction.readFrom && <> — read from &quot;{extraction.readFrom}&quot;</>}
           </p>
 
+          {extraction.fitNotes && (
+            <p className="mb-4 text-sm text-ink-soft">
+              <span className="font-mono text-xs uppercase tracking-wide text-ink-faint">fit notes: </span>
+              {extraction.fitNotes}
+            </p>
+          )}
+
+          {usedImages.length > 0 && (
+            <div className="mb-4">
+              <span className="mb-1 block font-mono text-xs uppercase tracking-wide text-ink-faint">
+                photos this read used ({usedImages.length})
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {usedImages.map((src, i) => (
+                  <img
+                    key={i}
+                    src={src}
+                    alt={`listing photo ${i + 1}`}
+                    className="h-16 w-16 rounded object-cover"
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-col gap-4">
-            <label className="flex flex-col gap-1">
-              <span className="font-mono text-xs uppercase tracking-wide text-ink-faint">brand</span>
-              <input
-                className="rounded border border-line bg-panel px-3 py-2"
-                value={extraction.brand ?? ""}
-                onChange={(e) => updateExtractionField("brand", e.target.value)}
-              />
-            </label>
+            <div className="flex gap-3">
+              <label className="flex flex-1 flex-col gap-1">
+                <span className="font-mono text-xs uppercase tracking-wide text-ink-faint">brand</span>
+                <input
+                  className="rounded border border-line bg-panel px-3 py-2"
+                  value={extraction.brand ?? ""}
+                  onChange={(e) => updateExtractionField("brand", e.target.value)}
+                />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="font-mono text-xs uppercase tracking-wide text-ink-faint">
+                  size (as listed)
+                </span>
+                <input
+                  className="w-28 rounded border border-line bg-panel px-3 py-2"
+                  value={extraction.size ?? ""}
+                  placeholder="no data"
+                  onChange={(e) => updateExtractionField("size", e.target.value)}
+                />
+              </label>
+            </div>
 
             {(["bust", "waist", "hip"] as const).map((field) => (
               <div key={field} className="flex flex-col gap-1">
@@ -441,8 +482,20 @@ export default function Home() {
           <h1 className="mb-2 text-2xl font-semibold">Here&apos;s the read</h1>
 
           {extraction?.summary && (
-            <p className="mb-6 rounded border border-line bg-panel px-4 py-3 text-sm text-ink-soft">
+            <p className="mb-4 rounded border border-line bg-panel px-4 py-3 text-sm text-ink-soft">
               {extraction.summary}
+            </p>
+          )}
+
+          {(extraction?.size || extraction?.fitNotes) && (
+            <p className="mb-6 text-sm text-ink-soft">
+              {extraction?.size && (
+                <>
+                  Listed size: <strong className="text-ink">{extraction.size}</strong>
+                  {extraction?.fitNotes && " — "}
+                </>
+              )}
+              {extraction?.fitNotes}
             </p>
           )}
 
