@@ -28,6 +28,7 @@ export async function POST() {
     payment_method_collection: "if_required",
     customer: profile?.stripeCustomerId ?? undefined,
     client_reference_id: userId,
+    branding_settings: { display_name: "Mind the Fit" },
     success_url: `${origin}/`,
     cancel_url: `${origin}/`,
   });
