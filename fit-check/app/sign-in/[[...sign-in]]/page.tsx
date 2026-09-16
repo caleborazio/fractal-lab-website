@@ -7,7 +7,10 @@ export default async function SignInPage({
   searchParams: Promise<{ redirect_url?: string }>;
 }) {
   const { redirect_url } = await searchParams;
-  const back = safeReturnPath(redirect_url);
+  // Landing on /sign-in with no return path (e.g. clicked "Sign in" on the
+  // marketing page) should still land in the app, not back on the page that
+  // has no reason to require a session.
+  const back = safeReturnPath(redirect_url) ?? "/app";
 
   return (
     <main className="mx-auto flex min-h-screen max-w-xl flex-col px-5 py-8">
@@ -26,7 +29,7 @@ export default async function SignInPage({
         {clerkEnabled ? (
           <SignIn
             forceRedirectUrl={back}
-            signUpUrl={back ? `/sign-up?redirect_url=${encodeURIComponent(back)}` : "/sign-up"}
+            signUpUrl={`/sign-up?redirect_url=${encodeURIComponent(back)}`}
             appearance={{
               variables: {
                 colorPrimary: "#8a6112",

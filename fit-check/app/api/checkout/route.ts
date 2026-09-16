@@ -29,8 +29,8 @@ export async function POST() {
     customer: profile?.stripeCustomerId ?? undefined,
     client_reference_id: userId,
     branding_settings: { display_name: "Mind the Fit" },
-    success_url: `${origin}/`,
-    cancel_url: `${origin}/`,
+    success_url: `${origin}/app`,
+    cancel_url: `${origin}/app`,
   });
 
   return NextResponse.json({ url: session.url });

@@ -7,7 +7,9 @@ export default async function SignUpPage({
   searchParams: Promise<{ redirect_url?: string }>;
 }) {
   const { redirect_url } = await searchParams;
-  const back = safeReturnPath(redirect_url);
+  // Landing on /sign-up with no return path (e.g. clicked "Try it free" on
+  // the marketing page) should land in the app after signing up.
+  const back = safeReturnPath(redirect_url) ?? "/app";
 
   return (
     <main className="mx-auto flex min-h-screen max-w-xl flex-col px-5 py-8">
@@ -26,7 +28,7 @@ export default async function SignUpPage({
         {clerkEnabled ? (
           <SignUp
             forceRedirectUrl={back}
-            signInUrl={back ? `/sign-in?redirect_url=${encodeURIComponent(back)}` : "/sign-in"}
+            signInUrl={`/sign-in?redirect_url=${encodeURIComponent(back)}`}
             appearance={{
               variables: {
                 colorPrimary: "#8a6112",

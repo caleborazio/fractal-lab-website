@@ -15,10 +15,12 @@ end-to-end with no accounts configured; add real keys to require sign-in.
 A Profile is keyed by Clerk user id, so signing in is what "builds your
 profile" — there's no separate anonymous state anymore.
 
-- `app/page.tsx` — server component: the sign-in gate, then renders `FitCheckApp`
+- `app/page.tsx` — public marketing page: what it does, how it works, pricing, FAQ. No auth.
+- `app/app/page.tsx` — server component: the sign-in gate, then renders `FitCheckApp`
 - `components/FitCheckApp.tsx` — the whole client flow: profile → upload/paste → confirm extraction → verdict → feedback
 - `app/api/extract` — calls Gemini vision to read stated measurements from photos/text; enforces the free-tier monthly cap (`lib/usage.ts`)
 - `app/api/profile`, `app/api/checks` — persistence via Prisma
+- `app/api/checkout`, `app/api/webhooks/stripe`, `app/api/billing-portal` — Stripe subscription billing
 - `lib/fit.ts` — the plain-arithmetic ease/tolerance verdict logic
 - `lib/gemini.ts` — the vision extraction prompt + schema
 - `lib/plan.ts` — the one place the Plus price and free-check allowance are defined
@@ -45,6 +47,6 @@ measurements straight against your body profile. No native app, no browser
 extension, no multi-category support. See the research/MVP writeup for the
 fuller roadmap.
 
-Free tier is 5 checks/month (`lib/plan.ts`), Plus is $4.99/mo — but there's no
-real billing yet. `Profile.plan` just sits at `"free"` until a Stripe (or
-similar) subscription flow exists to flip it to `"paid"`.
+Free tier is 5 checks/month (`lib/plan.ts`), Plus is $4.99/mo, billed via
+Stripe subscriptions (test mode by default — see `STRIPE_SECRET_KEY` in
+`.env.example`). Checkout supports promotion codes out of the box.
