@@ -71,6 +71,7 @@ export function FitCheckApp() {
   const [usedImages, setUsedImages] = useState<string[]>([]);
   const [feedbackSent, setFeedbackSent] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [billingBusy, setBillingBusy] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -167,6 +168,20 @@ export function FitCheckApp() {
     } catch {
       setError("Couldn't read that listing. Try a clearer photo of the tag or measurements.");
       setStep("submit");
+    }
+  }
+
+  async function goToStripe(path: "/api/checkout" | "/api/billing-portal") {
+    setBillingBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(path, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok || !data.url) throw new Error(data.error ?? "Couldn't reach billing.");
+      window.location.href = data.url;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't reach billing.");
+      setBillingBusy(false);
     }
   }
 
@@ -300,11 +315,29 @@ export function FitCheckApp() {
           </p>
 
           {usage && usage.checksRemaining !== null && (
-            <p className="mb-4 text-xs text-ink-faint">
-              {usage.checksRemaining} of {FREE_CHECKS_PER_MONTH} free checks left this month
-              {usage.checksRemaining === 0 &&
-                ` — upgrade to Mind the Fit Plus (${PLUS_PRICE_LABEL}/mo) for unlimited`}
-            </p>
+            <div className="mb-4">
+              <p className="text-xs text-ink-faint">
+                {usage.checksRemaining} of {FREE_CHECKS_PER_MONTH} free checks left this month
+              </p>
+              {usage.checksRemaining === 0 && (
+                <button
+                  onClick={() => goToStripe("/api/checkout")}
+                  disabled={billingBusy}
+                  className="mt-2 rounded bg-accent px-3 py-1.5 text-xs font-medium text-bg hover:bg-accent-strong disabled:opacity-50"
+                >
+                  Upgrade to Mind the Fit Plus ({PLUS_PRICE_LABEL}/mo)
+                </button>
+              )}
+            </div>
+          )}
+          {usage && usage.checksRemaining === null && (
+            <button
+              onClick={() => goToStripe("/api/billing-portal")}
+              disabled={billingBusy}
+              className="mb-4 text-xs text-ink-faint underline hover:text-accent disabled:opacity-50"
+            >
+              Manage billing
+            </button>
           )}
 
           <div
