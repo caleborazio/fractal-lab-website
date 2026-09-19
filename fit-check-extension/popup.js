@@ -142,10 +142,15 @@ function renderResult(data) {
         } couldn't be captured. The listing text usually covers it, but a screenshot uploaded from mindthefit.com works too.</p>`
       : "";
 
+  const photoNote = result.measuredFromPhoto
+    ? `<p class="photo-note">★ Filled in from a photo, not the listing text — worth a glance yourself.</p>`
+    : "";
+
   resultEl.innerHTML = `
     <p class="result-title">${brandLine}${result.garmentType || "item"}</p>
     <p class="result-headline tone-${overall.tone}">${overall.headline}</p>
     ${result.summary ? `<p class="muted">${result.summary}</p>` : ""}
+    ${photoNote}
     ${rows}
     ${result.fitNotes ? `<p class="muted">${result.fitNotes}</p>` : ""}
     ${imagesNote}
@@ -193,9 +198,16 @@ async function extractPageData() {
 
   const text = (document.body.innerText || "").trim().slice(0, 8000);
 
+  // Prioritize the largest images on the page, not the first ones in DOM
+  // order -- a real product/diagram photo is almost always one of the
+  // biggest images on the page, while nav logos, icons, and "you might also
+  // like" thumbnails elsewhere are small. DOM order can put those first and
+  // push the actual listing photos (especially a later one in a carousel,
+  // e.g. a measurement diagram a few photos in) past a small candidate cap.
   const candidates = Array.from(document.querySelectorAll("img"))
     .filter((img) => img.naturalWidth >= 200 && img.naturalHeight >= 200)
-    .slice(0, 12);
+    .sort((a, b) => b.naturalWidth * b.naturalHeight - a.naturalWidth * a.naturalHeight)
+    .slice(0, 20);
 
   const seen = new Set();
   const images = [];
@@ -203,7 +215,7 @@ async function extractPageData() {
   const failedImageUrls = [];
 
   for (const img of candidates) {
-    if (images.length >= 6) break;
+    if (images.length >= 8) break;
     const src = img.currentSrc || img.src;
     if (!src || seen.has(src)) continue;
     seen.add(src);

@@ -463,6 +463,13 @@ export function FitCheckApp() {
             {extraction.readFrom && <> — read from &quot;{extraction.readFrom}&quot;</>}
           </p>
 
+          {extraction.measuredFromPhoto && (
+            <p className="mb-4 text-sm text-warn">
+              ★ These measurements were filled in from a photo (a diagram, tag, or card), not typed
+              out in the listing text — worth a glance at the photo yourself to double-check.
+            </p>
+          )}
+
           {extraction.fitNotes && (
             <p className="mb-4 text-sm text-ink-soft">
               <span className="font-mono text-xs uppercase tracking-wide text-ink-faint">fit notes: </span>

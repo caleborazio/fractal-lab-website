@@ -16,6 +16,7 @@ export interface ExtractionResult {
   unit: "in" | "cm";
   fitNotes: string | null;
   readFrom: string | null;
+  measuredFromPhoto: boolean;
   confidence: "high" | "medium" | "low";
   summary: string;
 }
@@ -42,10 +43,11 @@ const responseSchema = {
     unit: { type: SchemaType.STRING, enum: ["in", "cm"] },
     fitNotes: { type: SchemaType.STRING, nullable: true },
     readFrom: { type: SchemaType.STRING, nullable: true },
+    measuredFromPhoto: { type: SchemaType.BOOLEAN },
     confidence: { type: SchemaType.STRING, enum: ["high", "medium", "low"] },
     summary: { type: SchemaType.STRING },
   },
-  required: ["garmentType", "unit", "confidence", "summary"],
+  required: ["garmentType", "unit", "measuredFromPhoto", "confidence", "summary"],
 };
 
 const PROMPT = `You are reading photo(s) and/or text from a single secondhand or vintage clothing listing (garment tags, a seller's handwritten measurement card, flat-lay photos, and/or listing text/description).
@@ -58,6 +60,8 @@ If a photo shows a tape measure or ruler laid straight across a single flat laye
 If you genuinely cannot tell which convention was used, set convention to "unknown" rather than guessing -- do not silently assume a number is doubled or not. Report the number exactly as stated either way; conversion happens downstream, not in your answer.
 
 Only report a measurement if it is EXPLICITLY STATED somewhere -- on a tag, in a handwritten note, in listing text, or clearly readable in a photo. Do NOT estimate a measurement from the garment's visual proportions alone with no stated number or reference object.
+
+Some resale sites (ThredUp is a common example) overlay a labeled measurement diagram on a photo -- a mannequin or dress-form silhouette with bust/waist/hip/length numbers pointing to it, sometimes captioned "mannequin measurements." Despite that caption, this is normally THIS SPECIFIC GARMENT'S own measurements: the item was fitted to an adjustable form and measured on it, which is exactly why the numbers differ from listing to listing. Treat a single-item diagram like this as real garment data, same weight as a printed tag -- do not discount it just because it's captioned "mannequin." This is different from a generic SIZE CHART showing multiple rows, one per size (S/M/L/XL each with its own range) -- a multi-row chart like that is NOT this garment's specific measurement and should be ignored.
 
 The listing text you're given may include a "Buyer/seller comments" section -- sellers very often answer exact measurement questions there even when the main description has none. Treat a seller's reply in the comments the same as listing text for sourcing a measurement.
 
@@ -75,7 +79,8 @@ Return:
 - length: garment length top-to-hem if stated (no convention ambiguity for this one)
 - unit: "in" or "cm" -- whichever unit the source used (assume "in" if ambiguous)
 - fitNotes: a brief note on stretch/structure/fit-relevant language found in the text, else null
-- readFrom: a short quote or description of exactly where you read each number from (e.g. "tag says Bust 36in, Waist 30in" or "seller's description: '48 inches long, 16 inches bust (flexible)'" or "seller's comment reply: 'Pit: 15.5in, waist: 13in'")
+- readFrom: a short quote or description of exactly where you read each number from (e.g. "tag says Bust 36in, Waist 30in" or "seller's description: '48 inches long, 16 inches bust (flexible)'" or "seller's comment reply: 'Pit: 15.5in, waist: 13in'" or "measurement diagram overlaid on photo 2")
+- measuredFromPhoto: true if the bust/waist/hip/length numbers you're reporting came primarily from something you read IN A PHOTO (a diagram, tag, or handwritten card) rather than typed listing text -- false if they came from the listing text/description/comments instead
 - confidence: "high" if numbers were printed/typed and clear, "medium" if handwritten or slightly unclear, "low" if you're unsure you read them correctly
 - summary: 2-4 plain-English sentences a shopper can quickly sanity-check -- what you found, which source each came from (a specific photo, the listing text, a comment, a tag), call out explicitly any number you judged to be a flat/half measurement so they know it'll be doubled for comparison, and flag any inconsistency you noticed between sources
 

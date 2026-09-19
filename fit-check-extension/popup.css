@@ -137,6 +137,12 @@ input[type="text"]:focus {
   margin: 8px 0 0;
 }
 
+.photo-note {
+  color: var(--warn);
+  font-size: 11px;
+  margin: 8px 0 0;
+}
+
 .error {
   color: var(--bad);
   font-size: 12px;

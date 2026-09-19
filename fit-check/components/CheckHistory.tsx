@@ -133,6 +133,12 @@ export function CheckHistory() {
                   <p className="mb-3 text-sm text-ink-soft">{check.rawExtraction.summary}</p>
                 )}
 
+                {check.rawExtraction?.measuredFromPhoto && (
+                  <p className="mb-3 text-sm text-warn">
+                    ★ Filled in from a photo, not the listing text — worth a glance yourself.
+                  </p>
+                )}
+
                 {check.verdict && check.verdict.length > 0 && (
                   <div className="mb-3 flex flex-col gap-1.5">
                     {check.verdict.map((v) => (
