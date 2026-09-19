@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { AppHeader } from "@/components/AppHeader";
 import { AccountActions } from "@/components/AccountActions";
 import { MeasurementsForm } from "@/components/MeasurementsForm";
+import { ExtensionConnect } from "@/components/ExtensionConnect";
 import { FREE_CHECKS_PER_MONTH } from "@/lib/plan";
 
 export default async function SettingsPage() {
@@ -40,6 +41,9 @@ export default async function SettingsPage() {
         Private, never shared — this is what every fit-check gets compared against.
       </p>
       <MeasurementsForm />
+
+      <h2 className="mb-3 mt-10 text-lg font-semibold">Connections</h2>
+      <ExtensionConnect />
 
       <Link
         href="/"

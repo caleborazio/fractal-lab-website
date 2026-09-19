@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Mind the Fit</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="header">
+      <span class="wordmark">Mind the Fit</span>
+      <a id="open-app" href="#" class="link-muted">Open app</a>
+    </header>
+
+    <section id="connect-view" class="view hidden">
+      <p class="lead">Connect this extension to your Mind the Fit account.</p>
+      <ol class="steps">
+        <li>Open <strong>mindthefit.com</strong> → Settings → Browser extension</li>
+        <li>Click "Generate connection code"</li>
+        <li>Paste it below</li>
+      </ol>
+      <input id="token-input" type="text" placeholder="Paste your connection code" />
+      <button id="connect-btn" class="btn-primary">Connect</button>
+      <p id="connect-error" class="error hidden"></p>
+    </section>
+
+    <section id="main-view" class="view hidden">
+      <p class="lead">Check the listing on this page — no need to copy anything.</p>
+      <button id="check-btn" class="btn-primary">Check the fit</button>
+      <p id="usage-note" class="muted hidden"></p>
+
+      <div id="result" class="result hidden"></div>
+
+      <p id="main-error" class="error hidden"></p>
+
+      <button id="disconnect-btn" class="link-muted disconnect">Disconnect</button>
+    </section>
+
+    <section id="loading-view" class="view">
+      <p class="muted">Loading…</p>
+    </section>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

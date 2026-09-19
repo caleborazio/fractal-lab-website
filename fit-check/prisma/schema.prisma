@@ -21,6 +21,10 @@ model Profile {
   // otherwise it's stale from a prior month and reads as 0 (see lib/usage.ts).
   checksUsedThisMonth Int        @default(0)
   usageMonth          String     @default("")
+  // Bearer token the browser extension sends instead of a Clerk session
+  // cookie -- generated on demand from Settings, regenerating invalidates
+  // any extension already connected with the old value.
+  extensionToken      String?    @unique
   createdAt           DateTime   @default(now())
   updatedAt           DateTime   @updatedAt
   checks              FitCheck[]
