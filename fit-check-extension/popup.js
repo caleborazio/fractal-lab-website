@@ -198,24 +198,60 @@ async function extractPageData() {
 
   const text = (document.body.innerText || "").trim().slice(0, 8000);
 
-  // Prioritize the largest images on the page, not the first ones in DOM
-  // order -- a real product/diagram photo is almost always one of the
-  // biggest images on the page, while nav logos, icons, and "you might also
-  // like" thumbnails elsewhere are small. DOM order can put those first and
-  // push the actual listing photos (especially a later one in a carousel,
-  // e.g. a measurement diagram a few photos in) past a small candidate cap.
-  const candidates = Array.from(document.querySelectorAll("img"))
-    .filter((img) => img.naturalWidth >= 200 && img.naturalHeight >= 200)
-    .sort((a, b) => b.naturalWidth * b.naturalHeight - a.naturalWidth * a.naturalHeight)
-    .slice(0, 20);
+  // Real-world check against a ThredUp listing showed two things naturalWidth
+  // sorting alone gets wrong: (1) a page can have a small on-screen image
+  // (e.g. a QR code) with huge natural/source resolution that would
+  // outrank the actual product photo -- rendered on-screen size is the
+  // signal that matches visual prominence, not source resolution; (2) a
+  // product's OTHER photos (e.g. a measurement diagram later in the
+  // carousel) are often already fully loaded as real <img> elements, just
+  // small (ThredUp's own thumbnail rail renders at ~80px) -- a 200px floor
+  // discarded those entirely, which is why only the currently-focused photo
+  // ever got read.
+  const MIN_DIM = 50; // above real UI icons (~14-24px seen), below real thumbnails (~77px seen)
+  const renderedArea = (img) => {
+    const r = img.getBoundingClientRect();
+    return r.width * r.height;
+  };
+
+  const loaded = Array.from(document.querySelectorAll("img")).filter(
+    (img) => img.naturalWidth >= MIN_DIM && img.naturalHeight >= MIN_DIM
+  );
+
+  // Scope to the gallery/carousel region when we can find one, so small
+  // thumbnails from an unrelated "you might also like" grid elsewhere on
+  // the page don't dilute the pool -- walk up from the most prominently
+  // rendered image until a container holds several qualifying images
+  // (the gallery + its thumbnail rail), falling back to the whole page.
+  let pool = loaded;
+  if (loaded.length > 0) {
+    const hero = loaded.reduce((a, b) => (renderedArea(a) >= renderedArea(b) ? a : b));
+    let node = hero;
+    for (let i = 0; i < 6 && node.parentElement; i++) {
+      node = node.parentElement;
+      const within = Array.from(node.querySelectorAll("img")).filter(
+        (img) => img.naturalWidth >= MIN_DIM && img.naturalHeight >= MIN_DIM
+      );
+      if (within.length >= 3) {
+        pool = within;
+        break;
+      }
+    }
+  }
+
+  const candidates = pool.sort((a, b) => renderedArea(b) - renderedArea(a)).slice(0, 20);
 
   const seen = new Set();
   const images = [];
   const thumbnails = [];
   const failedImageUrls = [];
+  const MAX_ATTEMPTS = 8; // some CDNs (confirmed: ThredUp) block canvas capture on
+  // every image, not just the odd tainted one -- cap total attempts, not just
+  // successes, so a fully-blocked CDN doesn't burn time retrying CORS on all
+  // 20 candidates before falling through to the server-side URL fallback.
 
   for (const img of candidates) {
-    if (images.length >= 8) break;
+    if (images.length + failedImageUrls.length >= MAX_ATTEMPTS) break;
     const src = img.currentSrc || img.src;
     if (!src || seen.has(src)) continue;
     seen.add(src);

@@ -7,7 +7,13 @@ import { prisma } from "@/lib/prisma";
 import { PLUS_PRICE_LABEL } from "@/lib/plan";
 import { fetchImageAsBase64 } from "@/lib/fetchListing";
 
-const MAX_FALLBACK_IMAGE_URLS = 4;
+// On some sites (confirmed on ThredUp) the image CDN doesn't allow anonymous
+// CORS at all, so every gallery photo -- not just the odd tainted one --
+// ends up needing this fallback, even though the CDN itself is completely
+// open to a plain server-side fetch. Matches the client's own capture cap
+// so a listing's full photo set doesn't get truncated here after already
+// surviving the client-side size/gallery filtering.
+const MAX_FALLBACK_IMAGE_URLS = 8;
 
 // The whole point of the extension is that it reads the page the person is
 // already looking at, in their own authenticated browser -- so unlike
