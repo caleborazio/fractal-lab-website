@@ -160,14 +160,35 @@ input[type="text"]:focus {
   margin: 0 0 8px;
 }
 
-.result-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 4px 0;
-  font-size: 12px;
+.result-headline {
+  font-weight: 600;
+  margin: 0 0 8px;
 }
 
-.result-row .dim {
+.result-headline.tone-good {
+  color: var(--good);
+}
+
+.result-headline.tone-warn {
+  color: var(--warn);
+}
+
+.result-headline.tone-neutral {
+  color: var(--ink-soft);
+}
+
+.result-dim {
+  padding: 6px 0;
+  border-top: 1px solid var(--line);
+}
+
+.result-dim-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.result-dim-head .dim {
   font-family: ui-monospace, monospace;
   text-transform: uppercase;
   font-size: 10px;
@@ -175,7 +196,30 @@ input[type="text"]:focus {
   color: var(--ink-faint);
 }
 
-.result-row .reading {
+.reading-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.reading-badge.tone-good {
+  color: var(--good);
+  background: var(--good-bg);
+}
+
+.reading-badge.tone-warn {
+  color: var(--warn);
+  background: var(--warn-bg);
+}
+
+.reading-badge.tone-neutral {
+  color: var(--ink-faint);
+  background: var(--panel);
+}
+
+.dim-detail {
+  margin: 4px 0 0;
+  font-size: 11px;
   color: var(--ink-soft);
 }
 

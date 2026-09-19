@@ -27,7 +27,7 @@ function withTimeoutSignal(ms: number) {
   return { signal: controller.signal, clear: () => clearTimeout(timer) };
 }
 
-async function fetchImageAsBase64(
+export async function fetchImageAsBase64(
   url: string
 ): Promise<{ base64: string; mimeType: string } | null> {
   const { signal, clear } = withTimeoutSignal(IMAGE_TIMEOUT_MS);

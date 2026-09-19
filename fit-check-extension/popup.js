@@ -6,7 +6,17 @@ const READING_LABEL = {
   fitted: "Fitted, true to size",
   comfortable: "Comfortable, room to move",
   loose: "Loose / oversized",
-  no_data: "No measurement to compare",
+  no_data: "No measurement given",
+};
+
+// tight/loose read as a caution regardless of direction; fitted/comfortable
+// read as good; no_data is neutral. Mirrors the web app's tone system.
+const READING_TONE = {
+  tight: "warn",
+  loose: "warn",
+  fitted: "good",
+  comfortable: "good",
+  no_data: "neutral",
 };
 
 const views = {
@@ -64,22 +74,82 @@ function setMainError(message) {
   }
 }
 
+// Same synthesis as lib/fit.ts's summarizeVerdict, kept in sync by hand --
+// small and stable enough that duplicating it here beats a build step.
+function summarize(verdicts) {
+  const withData = verdicts.filter((v) => v.reading !== "no_data");
+  if (withData.length === 0) {
+    return { headline: "Not enough measurements yet to say how this will fit.", tone: "neutral" };
+  }
+  const tight = withData.filter((v) => v.reading === "tight").map((v) => v.dimension);
+  const loose = withData.filter((v) => v.reading === "loose").map((v) => v.dimension);
+  const join = (d) => (d.length <= 1 ? d.join("") : `${d.slice(0, -1).join(", ")} and ${d[d.length - 1]}`);
+
+  if (tight.length === 0 && loose.length === 0) {
+    return { headline: "Looks like a good fit overall.", tone: "good" };
+  }
+  if (tight.length > 0 && loose.length > 0) {
+    return {
+      headline: `Mixed fit — snug through the ${join(tight)}, loose through the ${join(loose)}.`,
+      tone: "warn",
+    };
+  }
+  if (tight.length > 0) {
+    return { headline: `Will likely run tight through the ${join(tight)}.`, tone: "warn" };
+  }
+  return { headline: `Will likely run loose through the ${join(loose)}.`, tone: "warn" };
+}
+
+function formatInches(n) {
+  return Number.isInteger(n) ? `${n}"` : `${n.toFixed(1)}"`;
+}
+
+function formatEase(ease) {
+  if (ease == null) return "";
+  const abs = formatInches(Math.abs(ease));
+  return ease >= 0 ? `${abs} of room` : `${abs} short`;
+}
+
 function renderResult(data) {
   resultEl.classList.remove("hidden");
-  const brandLine = data.result.brand ? `${data.result.brand} — ` : "";
-  const rows = (data.verdict || [])
-    .map(
-      (v) =>
-        `<div class="result-row"><span class="dim">${v.dimension}</span><span class="reading">${
-          READING_LABEL[v.reading] || v.reading
-        }</span></div>`
-    )
+  const { result, verdict = [] } = data;
+  const overall = summarize(verdict);
+  const brandLine = result.brand ? `${result.brand} — ` : "";
+
+  const rows = verdict
+    .map((v) => {
+      const detail =
+        v.reading === "no_data"
+          ? ""
+          : `<p class="dim-detail">${formatInches(v.garment)} garment vs your ${formatInches(
+              v.body
+            )} — ${formatEase(v.ease)}</p>`;
+      return `
+        <div class="result-dim">
+          <div class="result-dim-head">
+            <span class="dim">${v.dimension}</span>
+            <span class="reading-badge tone-${READING_TONE[v.reading]}">${READING_LABEL[v.reading]}</span>
+          </div>
+          ${detail}
+        </div>`;
+    })
     .join("");
 
+  const imagesNote =
+    data.imagesUnreadable > 0
+      ? `<p class="muted">Read ${data.imagesUsed} photo${data.imagesUsed === 1 ? "" : "s"} from this page — ${
+          data.imagesUnreadable
+        } couldn't be captured. The listing text usually covers it, but a screenshot uploaded from mindthefit.com works too.</p>`
+      : "";
+
   resultEl.innerHTML = `
-    <p class="result-title">${brandLine}${data.result.garmentType || "item"}</p>
+    <p class="result-title">${brandLine}${result.garmentType || "item"}</p>
+    <p class="result-headline tone-${overall.tone}">${overall.headline}</p>
+    ${result.summary ? `<p class="muted">${result.summary}</p>` : ""}
     ${rows}
-    <a class="result-link" href="#" id="view-history-link">View in your history →</a>
+    ${result.fitNotes ? `<p class="muted">${result.fitNotes}</p>` : ""}
+    ${imagesNote}
+    <a class="result-link" href="#" id="view-history-link">View full details in your history →</a>
   `;
   document.getElementById("view-history-link").addEventListener("click", (e) => {
     e.preventDefault();
@@ -98,14 +168,27 @@ function renderResult(data) {
 // point: it reads what the user's own browser already rendered, which is
 // exactly what a server-side fetch of the same URL can't do on a site that
 // blocks automated requests.
-function extractPageData() {
-  function drawResized(img, maxDim, quality) {
-    const scale = Math.min(1, maxDim / Math.max(img.naturalWidth, img.naturalHeight));
+async function extractPageData() {
+  function drawResized(imgEl, maxDim, quality) {
+    const scale = Math.min(1, maxDim / Math.max(imgEl.naturalWidth, imgEl.naturalHeight));
     const canvas = document.createElement("canvas");
-    canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
-    canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
-    canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL("image/jpeg", quality);
+    canvas.width = Math.max(1, Math.round(imgEl.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(imgEl.naturalHeight * scale));
+    canvas.getContext("2d").drawImage(imgEl, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/jpeg", quality); // throws if the canvas is tainted
+  }
+
+  // A fresh same-src Image loaded WITH crossOrigin set can read cleanly off
+  // canvas even when the page's own <img> (loaded without it) would taint --
+  // many CDNs allow anonymous CORS for images without the page opting in.
+  function loadWithCors(src) {
+    return new Promise((resolve, reject) => {
+      const probe = new Image();
+      probe.crossOrigin = "anonymous";
+      probe.onload = () => resolve(probe);
+      probe.onerror = reject;
+      probe.src = src;
+    });
   }
 
   const text = (document.body.innerText || "").trim().slice(0, 8000);
@@ -117,22 +200,35 @@ function extractPageData() {
   const seen = new Set();
   const images = [];
   const thumbnails = [];
+  const failedImageUrls = [];
+
   for (const img of candidates) {
     if (images.length >= 6) break;
     const src = img.currentSrc || img.src;
     if (!src || seen.has(src)) continue;
     seen.add(src);
+
     try {
       images.push(drawResized(img, 1024, 0.85));
       thumbnails.push(drawResized(img, 240, 0.6));
+      continue;
     } catch {
-      // Cross-origin image the page didn't serve with permissive CORS --
-      // can't read it off a canvas. Skip it; the page text usually carries
-      // the measurements anyway.
+      // Tainted canvas -- try once more via a CORS-mode reload below.
+    }
+
+    try {
+      const corsImg = await loadWithCors(src);
+      images.push(drawResized(corsImg, 1024, 0.85));
+      thumbnails.push(drawResized(corsImg, 240, 0.6));
+    } catch {
+      // Still no good -- hand the bare URL back so the server can try a
+      // direct fetch (image CDNs are often unprotected even when the page
+      // itself blocks automated requests).
+      failedImageUrls.push(src);
     }
   }
 
-  return { text, images, thumbnails, url: location.href };
+  return { text, images, thumbnails, failedImageUrls, url: location.href };
 }
 
 function dataUrlToPart(dataUrl) {
@@ -162,7 +258,7 @@ checkBtn.addEventListener("click", async () => {
       func: extractPageData,
     });
 
-    if (!page.text && page.images.length === 0) {
+    if (!page.text && page.images.length === 0 && page.failedImageUrls.length === 0) {
       throw new Error("Didn't find any listing text or photos on this page.");
     }
 
@@ -179,6 +275,7 @@ checkBtn.addEventListener("click", async () => {
         pageText: page.text,
         images: page.images.map(dataUrlToPart).filter(Boolean),
         thumbnails: page.thumbnails,
+        imageUrls: page.failedImageUrls,
       }),
     });
     const data = await res.json();
