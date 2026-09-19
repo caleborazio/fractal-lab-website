@@ -21,6 +21,7 @@ export function CheckHistory() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const [submittingId, setSubmittingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/checks")
@@ -48,6 +49,20 @@ export function CheckHistory() {
       // Leave the buttons up so they can just try again.
     } finally {
       setSubmittingId(null);
+    }
+  }
+
+  async function deleteCheck(id: string) {
+    setSubmittingId(id);
+    try {
+      const res = await fetch(`/api/checks/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      setChecks((prev) => (prev ? prev.filter((c) => c.id !== id) : prev));
+    } catch {
+      // Leave it in the list so they can try again.
+    } finally {
+      setSubmittingId(null);
+      setConfirmDeleteId(null);
     }
   }
 
@@ -145,7 +160,7 @@ export function CheckHistory() {
                   </div>
                 )}
 
-                <div className="border-t border-line pt-3">
+                <div className="mb-3 border-t border-line pt-3">
                   {check.actualFit ? (
                     <p className="text-sm text-ink-faint">
                       You said: <span className="text-ink-soft">{check.actualFit}</span>
@@ -166,6 +181,25 @@ export function CheckHistory() {
                         ))}
                       </div>
                     </>
+                  )}
+                </div>
+
+                <div className="flex justify-end border-t border-line pt-3">
+                  {confirmDeleteId === check.id ? (
+                    <button
+                      disabled={submittingId === check.id}
+                      onClick={() => deleteCheck(check.id)}
+                      className="text-xs text-bad underline disabled:opacity-50"
+                    >
+                      Click again to permanently delete
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmDeleteId(check.id)}
+                      className="text-xs text-ink-faint underline hover:text-bad"
+                    >
+                      Delete this check
+                    </button>
                   )}
                 </div>
               </div>

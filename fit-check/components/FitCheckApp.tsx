@@ -11,7 +11,7 @@ import {
   summarizeVerdict,
 } from "@/lib/fit";
 import type { ExtractionResult } from "@/lib/gemini";
-import { FREE_CHECKS_PER_MONTH, PLUS_PRICE_LABEL } from "@/lib/plan";
+import { FREE_CHECKS_PER_MONTH } from "@/lib/plan";
 import { MeasurementGuide } from "@/components/MeasurementGuide";
 import { Lightbox } from "@/components/Lightbox";
 
@@ -94,7 +94,6 @@ export function FitCheckApp() {
   const [checkId, setCheckId] = useState<string | null>(null);
   const [feedbackSent, setFeedbackSent] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [billingBusy, setBillingBusy] = useState(false);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -235,20 +234,6 @@ export function FitCheckApp() {
     }
   }
 
-  async function goToStripe(path: "/api/checkout" | "/api/billing-portal") {
-    setBillingBusy(true);
-    setError(null);
-    try {
-      const res = await fetch(path, { method: "POST" });
-      const data = await res.json();
-      if (!res.ok || !data.url) throw new Error(data.error ?? "Couldn't reach billing.");
-      window.location.href = data.url;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't reach billing.");
-      setBillingBusy(false);
-    }
-  }
-
   function updateExtractionField(
     field: "bust" | "waist" | "hip" | "length" | "brand" | "size",
     value: string
@@ -363,35 +348,39 @@ export function FitCheckApp() {
         <section>
           <h1 className="mb-2 text-3xl font-semibold">Got a listing you&apos;re unsure about?</h1>
           <p className="mb-2 max-w-prose text-ink-soft">
-            Screenshot it, or upload a photo of the tag or the seller&apos;s measurements —
-            from anywhere: Depop, Poshmark, eBay, a vintage seller&apos;s Instagram.
+            Paste a link from Poshmark or Vinted and it reads the listing directly. For anywhere
+            else, upload a photo of the tag, the seller&apos;s measurements, or a flat-lay instead —
+            works just as well.
           </p>
 
           {usage && usage.checksRemaining !== null && (
-            <div className="mb-4">
-              <p className="text-xs text-ink-faint">
-                {usage.checksRemaining} of {FREE_CHECKS_PER_MONTH} free checks left this month
-              </p>
+            <p className="mb-4 text-xs text-ink-faint">
+              {usage.checksRemaining} of {FREE_CHECKS_PER_MONTH} free checks left this month
               {usage.checksRemaining === 0 && (
-                <button
-                  onClick={() => goToStripe("/api/checkout")}
-                  disabled={billingBusy}
-                  className="mt-2 rounded bg-accent px-3 py-1.5 text-xs font-medium text-bg hover:bg-accent-strong disabled:opacity-50"
-                >
-                  Upgrade to Mind the Fit Plus ({PLUS_PRICE_LABEL}/mo)
-                </button>
+                <>
+                  {" "}
+                  —{" "}
+                  <a href="/app/settings" className="underline hover:text-accent">
+                    upgrade in Settings
+                  </a>{" "}
+                  for unlimited
+                </>
               )}
-            </div>
+            </p>
           )}
-          {usage && usage.checksRemaining === null && (
-            <button
-              onClick={() => goToStripe("/api/billing-portal")}
-              disabled={billingBusy}
-              className="mb-4 text-xs text-ink-faint underline hover:text-accent disabled:opacity-50"
-            >
-              Manage billing
-            </button>
-          )}
+
+          <label className="mb-1 block font-mono text-xs uppercase tracking-wide text-ink-faint">
+            paste the listing text or link
+          </label>
+          <textarea
+            className="mb-4 w-full rounded border border-line bg-panel px-3 py-2 text-ink outline-none focus:border-accent"
+            rows={3}
+            value={listingText}
+            onChange={(e) => setListingText(e.target.value)}
+            placeholder="Paste a link, or the seller's description and measurements…"
+          />
+
+          <p className="mb-2 text-center text-xs text-ink-faint">or</p>
 
           <div
             onClick={() => fileInputRef.current?.click()}
@@ -423,31 +412,13 @@ export function FitCheckApp() {
             </div>
           )}
 
-          <label className="mb-1 block font-mono text-xs uppercase tracking-wide text-ink-faint">
-            or paste the listing text / link
-          </label>
-          <textarea
-            className="mb-4 w-full rounded border border-line bg-panel px-3 py-2 text-ink outline-none focus:border-accent"
-            rows={3}
-            value={listingText}
-            onChange={(e) => setListingText(e.target.value)}
-            placeholder="Paste a link, or the seller's description and measurements…"
-          />
-
           {error && <p className="mb-3 text-sm text-bad">{error}</p>}
 
           <button
             onClick={checkFit}
             className="rounded bg-accent px-5 py-3 font-medium text-bg hover:bg-accent-strong"
           >
-            Check the fit
-          </button>
-
-          <button
-            onClick={() => setStep("profile")}
-            className="ml-3 text-sm text-ink-faint underline hover:text-accent"
-          >
-            edit your measurements
+            {error ? "Recheck the fit" : "Check the fit"}
           </button>
         </section>
       )}

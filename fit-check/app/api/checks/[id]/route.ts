@@ -27,3 +27,25 @@ export async function PATCH(
 
   return NextResponse.json({ ok: true });
 }
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const userId = await getUserId();
+  if (!userId) {
+    return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+  }
+
+  const { id } = await params;
+
+  const result = await prisma.fitCheck.deleteMany({
+    where: { id, profileId: userId },
+  });
+
+  if (result.count === 0) {
+    return NextResponse.json({ error: "Check not found." }, { status: 404 });
+  }
+
+  return NextResponse.json({ ok: true });
+}
