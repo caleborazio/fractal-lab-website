@@ -19,5 +19,5 @@
     "128": "icons/icon128.png"
   },
   "permissions": ["activeTab", "scripting", "storage"],
-  "host_permissions": ["https://mindthefit.com/*"]
+  "host_permissions": ["https://mindthefit.com/*", "https://www.mindthefit.com/*"]
 }

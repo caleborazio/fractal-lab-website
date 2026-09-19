@@ -1,4 +1,4 @@
-const API_BASE = "https://mindthefit.com";
+const API_BASE = "https://www.mindthefit.com";
 const TOKEN_KEY = "mtf_token";
 
 const READING_LABEL = {
