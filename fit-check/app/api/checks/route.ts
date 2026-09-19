@@ -32,6 +32,7 @@ export async function POST(req: NextRequest) {
     rawExtraction,
     verdict,
     actualFit,
+    images,
   } = body;
 
   const check = await prisma.fitCheck.create({
@@ -47,6 +48,7 @@ export async function POST(req: NextRequest) {
       rawExtraction: rawExtraction ?? undefined,
       verdict: verdict ?? undefined,
       actualFit: actualFit ?? null,
+      images: images ?? undefined,
       confirmed: true,
     },
   });

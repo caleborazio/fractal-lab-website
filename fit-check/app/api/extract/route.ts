@@ -38,6 +38,7 @@ export async function POST(req: NextRequest) {
 
     let combinedText = listingText;
     let combinedImages = uploadedImages;
+    let linkFetchFailed = false;
 
     const urlMatch = listingText?.match(/https?:\/\/\S+/i);
     if (urlMatch) {
@@ -45,9 +46,27 @@ export async function POST(req: NextRequest) {
       if (fetched) {
         combinedText = [fetched.text, listingText].filter(Boolean).join("\n\n");
         combinedImages = [...uploadedImages, ...fetched.images].slice(0, MAX_TOTAL_IMAGES);
+      } else {
+        linkFetchFailed = true;
       }
-      // If the fetch fails (blocked, timed out, nothing usable), fall through
-      // with the original pasted text/images -- an honest "no data" beats a hard error.
+    }
+
+    // A link that failed to fetch, with nothing else to go on, isn't "no
+    // measurements found" -- it's that we never actually read the page. Say
+    // so plainly and point at the workaround instead of burning a Gemini call
+    // on a guess made from a bare URL string.
+    const textBesidesLink = urlMatch
+      ? listingText?.replace(urlMatch[0], "").trim()
+      : listingText?.trim();
+    const hasOtherContent = uploadedImages.length > 0 || !!textBesidesLink;
+    if (linkFetchFailed && !hasOtherContent) {
+      return NextResponse.json(
+        {
+          error:
+            "Couldn't read that listing directly — some sites block automatic access (Depop, ThredUp, and several major retailers all do). Paste the seller's description text, or upload a photo of the tag, measurements, or a flat-lay, and it'll work the same way.",
+        },
+        { status: 422 }
+      );
     }
 
     const result = await extractMeasurements(combinedImages, combinedText);
@@ -61,7 +80,12 @@ export async function POST(req: NextRequest) {
     const usedImages = combinedImages.map((img) => ({
       dataUrl: `data:${img.mimeType};base64,${img.base64}`,
     }));
-    return NextResponse.json({ result, usedImages, usage: updatedUsage });
+    // They gave us something besides the link, so we still ran the check --
+    // but the read below is based only on that, not the actual page.
+    const warning = linkFetchFailed
+      ? "That site blocks automatic reading, so this read is based only on what you uploaded/pasted yourself, not the linked page."
+      : undefined;
+    return NextResponse.json({ result, usedImages, usage: updatedUsage, warning });
   } catch (err) {
     console.error("extract error", err);
     return NextResponse.json(

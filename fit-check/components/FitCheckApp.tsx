@@ -13,6 +13,7 @@ import {
 import type { ExtractionResult } from "@/lib/gemini";
 import { FREE_CHECKS_PER_MONTH, PLUS_PRICE_LABEL } from "@/lib/plan";
 import { MeasurementGuide } from "@/components/MeasurementGuide";
+import { Lightbox } from "@/components/Lightbox";
 
 type Step = "loading" | "profile" | "submit" | "extracting" | "result";
 
@@ -37,6 +38,26 @@ function fileToAttachment(file: File): Promise<ImageAttachment> {
     };
     reader.onerror = reject;
     reader.readAsDataURL(file);
+  });
+}
+
+/** Small JPEG thumbnails for history -- not the full-resolution images sent
+ * to Gemini, just enough to recognize the item later without bloating the DB. */
+function downscale(dataUrl: string, maxDim = 240, quality = 0.6): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return reject(new Error("no canvas context"));
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL("image/jpeg", quality));
+    };
+    img.onerror = () => reject(new Error("image failed to load"));
+    img.src = dataUrl;
   });
 }
 
@@ -69,9 +90,12 @@ export function FitCheckApp() {
 
   const [extraction, setExtraction] = useState<ExtractionResult | null>(null);
   const [usedImages, setUsedImages] = useState<string[]>([]);
+  const [warning, setWarning] = useState<string | null>(null);
+  const [checkId, setCheckId] = useState<string | null>(null);
   const [feedbackSent, setFeedbackSent] = useState(false);
   const [saving, setSaving] = useState(false);
   const [billingBusy, setBillingBusy] = useState(false);
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -162,9 +186,49 @@ export function FitCheckApp() {
         setStep("submit");
         return;
       }
-      setExtraction(data.result);
-      setUsedImages((data.usedImages ?? []).map((img: { dataUrl: string }) => img.dataUrl));
+      const result: ExtractionResult = data.result;
+      const usedImageUrls: string[] = (data.usedImages ?? []).map(
+        (img: { dataUrl: string }) => img.dataUrl
+      );
+      setExtraction(result);
+      setUsedImages(usedImageUrls);
+      setWarning(data.warning ?? null);
       setStep("result");
+
+      // Save right away, before any feedback -- someone often can't say how
+      // it actually fit until they've received the item, sometimes weeks
+      // later, and the check should already be sitting in their history by
+      // then rather than only existing if they happen to answer immediately.
+      if (profile) {
+        try {
+          const thumbnails = await Promise.all(
+            usedImageUrls.slice(0, 6).map((src) => downscale(src).catch(() => null))
+          );
+          const verdictNow = computeVerdict(profile, result);
+          const byDimension = Object.fromEntries(verdictNow.map((d) => [d.dimension, d]));
+          const saveRes = await fetch("/api/checks", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              brand: result.brand,
+              garmentType: result.garmentType,
+              bust: byDimension.bust?.garment ?? null,
+              waist: byDimension.waist?.garment ?? null,
+              hip: byDimension.hip?.garment ?? null,
+              length: result.length,
+              rawExtraction: result,
+              verdict: verdictNow,
+              images: thumbnails.filter((t): t is string => !!t),
+            }),
+          });
+          if (saveRes.ok) {
+            const saveData = await saveRes.json();
+            setCheckId(saveData.check?.id ?? null);
+          }
+        } catch {
+          // History save failing shouldn't block showing the read they came for.
+        }
+      }
     } catch {
       setError("Couldn't read that listing. Try a clearer photo of the tag or measurements.");
       setStep("submit");
@@ -207,26 +271,13 @@ export function FitCheckApp() {
   }
 
   async function sendFeedback(actualFit: string) {
-    if (!extraction || !verdict) return;
+    if (!checkId) return;
     setSaving(true);
     try {
-      const byDimension = Object.fromEntries(verdict.map((d) => [d.dimension, d]));
-      const res = await fetch("/api/checks", {
-        method: "POST",
+      const res = await fetch(`/api/checks/${checkId}`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          brand: extraction.brand,
-          garmentType: extraction.garmentType,
-          // Resolved circumference-equivalent (post any edits), not the raw
-          // stated number -- this is the final, person-corrected label.
-          bust: byDimension.bust?.garment ?? null,
-          waist: byDimension.waist?.garment ?? null,
-          hip: byDimension.hip?.garment ?? null,
-          length: extraction.length,
-          rawExtraction: extraction,
-          verdict,
-          actualFit,
-        }),
+        body: JSON.stringify({ actualFit }),
       });
       if (!res.ok) throw new Error();
       setFeedbackSent(true);
@@ -242,6 +293,8 @@ export function FitCheckApp() {
     setListingText("");
     setExtraction(null);
     setUsedImages([]);
+    setWarning(null);
+    setCheckId(null);
     setFeedbackSent(false);
     setError(null);
     setStep("submit");
@@ -363,7 +416,8 @@ export function FitCheckApp() {
                   key={i}
                   src={img.previewUrl}
                   alt="upload preview"
-                  className="h-20 w-20 rounded object-cover"
+                  onClick={() => setLightboxSrc(img.previewUrl)}
+                  className="h-20 w-20 cursor-zoom-in rounded object-cover"
                 />
               ))}
             </div>
@@ -408,6 +462,12 @@ export function FitCheckApp() {
         <section>
           <h1 className="mb-3 text-2xl font-semibold">Here&apos;s the read</h1>
 
+          {warning && (
+            <p className="mb-4 rounded border border-warn bg-warn-bg px-4 py-3 text-sm text-warn">
+              {warning}
+            </p>
+          )}
+
           <div
             className={
               "mb-4 rounded border px-4 py-3 text-base font-medium " +
@@ -450,10 +510,12 @@ export function FitCheckApp() {
                     key={i}
                     src={src}
                     alt={`listing photo ${i + 1}`}
-                    className="h-16 w-16 rounded object-cover"
+                    onClick={() => setLightboxSrc(src)}
+                    className="h-16 w-16 cursor-zoom-in rounded object-cover"
                   />
                 ))}
               </div>
+              <p className="mt-1 text-xs text-ink-faint">tap a photo to look closer</p>
             </div>
           )}
 
@@ -586,9 +648,15 @@ export function FitCheckApp() {
           <div className="rounded border border-line bg-panel px-4 py-4">
             {feedbackSent ? (
               <p className="text-sm text-pine">Thanks — that helps tune future reads.</p>
-            ) : (
+            ) : checkId ? (
               <>
-                <p className="mb-3 text-sm text-ink-soft">Did you get it? How did it actually fit?</p>
+                <p className="mb-3 text-sm text-ink-soft">
+                  Did you get it? How did it actually fit? (No rush — this is saved in your{" "}
+                  <a href="/app/history" className="underline hover:text-accent">
+                    history
+                  </a>{" "}
+                  for whenever you know.)
+                </p>
                 <div className="flex flex-wrap gap-2">
                   {["tight", "perfect", "loose", "didn't buy it"].map((opt) => (
                     <button
@@ -602,6 +670,11 @@ export function FitCheckApp() {
                   ))}
                 </div>
               </>
+            ) : (
+              <p className="text-sm text-ink-faint">
+                This read didn&apos;t save to your history (connection hiccup) — the result above is
+                still accurate, just won&apos;t show up later.
+              </p>
             )}
             {error && <p className="mt-3 text-sm text-bad">{error}</p>}
           </div>
@@ -614,6 +687,8 @@ export function FitCheckApp() {
           </button>
         </section>
       )}
+
+      <Lightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
     </>
   );
 }

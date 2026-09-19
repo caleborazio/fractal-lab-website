@@ -43,6 +43,10 @@ model FitCheck {
   verdict       Json?
   confirmed     Boolean  @default(false)
   actualFit     String?
+  // Small downscaled thumbnails (data URLs) for the history list -- not the
+  // full-resolution images sent to Gemini, just enough to recognize the item
+  // and re-inspect a tape-measure shot at a glance. Capped client-side.
+  images        Json?
   createdAt     DateTime @default(now())
 
   @@index([profileId])

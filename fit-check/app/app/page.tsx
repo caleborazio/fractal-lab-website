@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
 import { getUserId, clerkEnabled } from "@/lib/auth";
 import { FitCheckApp } from "@/components/FitCheckApp";
@@ -15,16 +16,16 @@ export default async function AppPage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-xl flex-col px-5 py-8">
       <header className="mb-8 flex items-center justify-between">
-        <a
-          href="https://fractallab.co"
-          className="font-mono text-xs uppercase tracking-wider text-ink-faint hover:text-accent"
-        >
-          Fractal Lab
-        </a>
-        <div className="flex items-center gap-3">
-          <span className="font-mono text-xs uppercase tracking-wider text-pine">
-            Mind the Fit · beta
-          </span>
+        <Link href="/app" className="font-mono text-xs uppercase tracking-wider text-pine">
+          Mind the Fit
+        </Link>
+        <div className="flex items-center gap-4">
+          <Link
+            href="/app/history"
+            className="font-mono text-xs uppercase tracking-wider text-ink-faint hover:text-accent"
+          >
+            History
+          </Link>
           {clerkEnabled && <UserButton />}
         </div>
       </header>

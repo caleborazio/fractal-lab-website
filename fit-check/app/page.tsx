@@ -42,16 +42,8 @@ export default function LandingPage() {
   return (
     <main className="mx-auto max-w-3xl px-5 py-8">
       <header className="mb-16 flex items-center justify-between">
-        <a
-          href="https://fractallab.co"
-          className="font-mono text-xs uppercase tracking-wider text-ink-faint hover:text-accent"
-        >
-          Fractal Lab
-        </a>
+        <span className="font-mono text-xs uppercase tracking-wider text-pine">Mind the Fit</span>
         <div className="flex items-center gap-4">
-          <span className="font-mono text-xs uppercase tracking-wider text-pine">
-            Mind the Fit · beta
-          </span>
           <Link
             href="/sign-in"
             className="font-mono text-xs uppercase tracking-wider text-ink-faint hover:text-accent"
