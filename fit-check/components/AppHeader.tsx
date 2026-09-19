@@ -2,6 +2,16 @@ import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
 import { clerkEnabled } from "@/lib/auth";
 
+// Clerk's default avatar (shown until a user uploads their own photo) is an
+// auto-generated marble/swirl graphic with no supported way to recolor it --
+// Clerk's `appearance.variables` only exposes `colorShimmer` for avatars, not
+// the generated graphic's palette. So instead of fighting that, we hide
+// whatever image Clerk would show and render a flat brand-colored circle
+// with a plain person glyph in its place.
+const AVATAR_GLYPH = encodeURIComponent(
+  "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='8' r='4'/><path d='M4 20c0-4 3.5-7 8-7s8 3 8 7'/></svg>"
+);
+
 // Server component (not client) -- same reason as app/app/page.tsx: this
 // Clerk version leaks server-only code into the client bundle if UserButton
 // is imported from a "use client" file under Next 16.
@@ -45,7 +55,23 @@ export function AppHeader() {
         </Link>
         {clerkEnabled && (
           <UserButton
-            appearance={{ variables: { colorPrimary: "#8a6112" } }}
+            appearance={{
+              variables: { colorPrimary: "#8a6112" },
+              elements: {
+                avatarBox: { width: "28px", height: "28px" },
+                userButtonAvatarBox: {
+                  width: "28px",
+                  height: "28px",
+                  backgroundColor: "#8a6112",
+                  backgroundImage: `url("data:image/svg+xml,${AVATAR_GLYPH}")`,
+                  backgroundSize: "16px 16px",
+                  backgroundPosition: "center",
+                  backgroundRepeat: "no-repeat",
+                },
+                avatarImage: { display: "none" },
+                userButtonAvatarImage: { display: "none" },
+              },
+            }}
           />
         )}
       </div>
