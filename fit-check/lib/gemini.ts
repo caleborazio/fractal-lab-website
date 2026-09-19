@@ -13,6 +13,10 @@ export interface ExtractionResult {
   hip: number | null;
   hipConvention: MeasurementConvention | null;
   length: number | null;
+  /** Bottoms only (pants/jeans/shorts): crotch seam to top of waistband. */
+  rise: number | null;
+  /** Bottoms only: crotch seam to leg opening. */
+  inseam: number | null;
   unit: "in" | "cm";
   fitNotes: string | null;
   readFrom: string | null;
@@ -40,6 +44,8 @@ const responseSchema = {
     hip: { type: SchemaType.NUMBER, nullable: true },
     hipConvention: conventionSchema,
     length: { type: SchemaType.NUMBER, nullable: true },
+    rise: { type: SchemaType.NUMBER, nullable: true },
+    inseam: { type: SchemaType.NUMBER, nullable: true },
     unit: { type: SchemaType.STRING, enum: ["in", "cm"] },
     fitNotes: { type: SchemaType.STRING, nullable: true },
     readFrom: { type: SchemaType.STRING, nullable: true },
@@ -61,6 +67,9 @@ If you genuinely cannot tell which convention was used, set convention to "unkno
 
 Only report a measurement if it is EXPLICITLY STATED somewhere -- on a tag, in a handwritten note, in listing text, or clearly readable in a photo. Do NOT estimate a measurement from the garment's visual proportions alone with no stated number or reference object.
 
+For PANTS, JEANS, or SHORTS specifically, also look for rise and inseam -- these are standard, commonly-stated measurements for bottoms, the same way bust/waist/hip are for tops:
+Rise is the crotch seam to the top of the waistband (front rise if only one is given). Inseam is the crotch seam down to the leg opening/hem -- this is what actually determines where the pant leg ends on someone, distinct from an overall outer-seam length. Report these as stated; they don't have a flat/half-vs-circumference ambiguity the way bust/waist/hip do, so no convention judgment is needed for them.
+
 Some resale sites (ThredUp is a common example) overlay a labeled measurement diagram on a photo -- a mannequin or dress-form silhouette with bust/waist/hip/length numbers pointing to it, sometimes captioned "mannequin measurements." Despite that caption, BUST/WAIST/HIP on a diagram like this are normally THIS SPECIFIC GARMENT'S own measurements: the item was fitted to an adjustable form and measured on it, which is exactly why those numbers differ from listing to listing. Treat bust/waist/hip from a single-item diagram like this as real garment data, same weight as a printed tag -- do not discount them just because the diagram is captioned "mannequin." This is different from a generic SIZE CHART showing multiple rows, one per size (S/M/L/XL each with its own range) -- a multi-row chart like that is NOT this garment's specific measurement and should be ignored.
 However, treat any LENGTH number on that same diagram with real suspicion: on inspection this is frequently a fixed dimension of the mannequin/form itself, not the garment -- it can appear as the exact same number across completely different, unrelated listings, and can conflict directly with a length stated elsewhere on the same listing (e.g. diagram says 28in while the listing text says 54.5in for the same item). Only report a length from a diagram like this if you have some corroborating reason to trust it (it varies plausibly with the garment, or roughly matches a length stated elsewhere); otherwise leave length null rather than reporting a number likely describing the display form and not the item, and say so in the summary if you're withholding it for this reason.
 
@@ -78,6 +87,7 @@ Return:
 - size: the stated size label if given (e.g. "4", "US 6", "M"), else null
 - bust, waist, hip: the RAW number exactly as stated (do not pre-double it), each with its own convention judgment (bustConvention, waistConvention, hipConvention)
 - length: garment length top-to-hem if stated (no convention ambiguity for this one)
+- rise, inseam: for pants/jeans/shorts only, if stated (see above); null for other garment types or if not given
 - unit: "in" or "cm" -- whichever unit the source used (assume "in" if ambiguous)
 - fitNotes: a brief note on stretch/structure/fit-relevant language found in the text, else null
 - readFrom: a short quote or description of exactly where you read each number from (e.g. "tag says Bust 36in, Waist 30in" or "seller's description: '48 inches long, 16 inches bust (flexible)'" or "seller's comment reply: 'Pit: 15.5in, waist: 13in'" or "measurement diagram overlaid on photo 2")
@@ -138,7 +148,9 @@ export async function extractMeasurements(
     !inBounds(parsed.bust) ||
     !inBounds(parsed.waist) ||
     !inBounds(parsed.hip) ||
-    !inBounds(parsed.length)
+    !inBounds(parsed.length) ||
+    !inBounds(parsed.rise) ||
+    !inBounds(parsed.inseam)
   ) {
     parsed.confidence = "low";
   }

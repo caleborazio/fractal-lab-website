@@ -229,6 +229,27 @@ input[type="text"]:focus {
   color: var(--ink-soft);
 }
 
+.landing {
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 6px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+
+.landing-label {
+  margin: 0 0 2px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.landing-detail {
+  margin: 0;
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
 .result-link {
   display: inline-block;
   margin-top: 10px;

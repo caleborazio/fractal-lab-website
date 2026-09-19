@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { summarizeVerdict, READING_LABEL, type DimensionVerdict } from "@/lib/fit";
+import { summarizeVerdict, READING_LABEL, type DimensionVerdict, type LandingEstimate } from "@/lib/fit";
 import type { ExtractionResult } from "@/lib/gemini";
 import { Lightbox } from "@/components/Lightbox";
 
@@ -13,6 +13,9 @@ interface SavedCheck {
   createdAt: string;
   images: string[] | null;
   verdict: DimensionVerdict[] | null;
+  landing: LandingEstimate | null;
+  rise: number | null;
+  inseam: number | null;
   rawExtraction: ExtractionResult | null;
 }
 
@@ -149,6 +152,21 @@ export function CheckHistory() {
                         <span className="text-ink-soft">{READING_LABEL[v.reading]}</span>
                       </div>
                     ))}
+                    {check.rise != null && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-mono text-xs uppercase tracking-wide text-ink-faint">
+                          rise
+                        </span>
+                        <span className="text-ink-soft">{check.rise}&quot;</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {check.landing && (
+                  <div className="mb-3 rounded border border-line bg-bg px-3 py-2.5">
+                    <p className="text-sm font-medium text-ink">{check.landing.label}</p>
+                    <p className="text-xs text-ink-soft">{check.landing.detail}</p>
                   </div>
                 )}
 

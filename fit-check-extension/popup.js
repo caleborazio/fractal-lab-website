@@ -146,12 +146,20 @@ function renderResult(data) {
     ? `<p class="photo-note">★ Filled in from a photo, not the listing text — worth a glance yourself.</p>`
     : "";
 
+  const landing = data.landing
+    ? `<div class="landing">
+        <p class="landing-label">${data.landing.label}</p>
+        <p class="landing-detail">${data.landing.detail}</p>
+      </div>`
+    : "";
+
   resultEl.innerHTML = `
     <p class="result-title">${brandLine}${result.garmentType || "item"}</p>
     <p class="result-headline tone-${overall.tone}">${overall.headline}</p>
     ${result.summary ? `<p class="muted">${result.summary}</p>` : ""}
     ${photoNote}
     ${rows}
+    ${landing}
     ${result.fitNotes ? `<p class="muted">${result.fitNotes}</p>` : ""}
     ${imagesNote}
     <a class="result-link" href="#" id="view-history-link">View full details in your history →</a>

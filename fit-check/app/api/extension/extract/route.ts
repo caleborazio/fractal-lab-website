@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { extractMeasurements } from "@/lib/gemini";
-import { computeVerdict } from "@/lib/fit";
+import { computeVerdict, estimateGarmentLanding } from "@/lib/fit";
 import { getProfileIdFromExtensionToken } from "@/lib/extensionAuth";
 import { checkUsage, recordUsage } from "@/lib/usage";
 import { prisma } from "@/lib/prisma";
@@ -84,11 +84,17 @@ export async function POST(req: NextRequest) {
     await recordUsage(profileId);
     const updatedUsage = await checkUsage(profileId);
 
-    const verdict = computeVerdict(
-      { bust: profile.bust, waist: profile.waist, hip: profile.hip, height: profile.height },
-      result
-    );
+    const bodyProfile = {
+      bust: profile.bust,
+      waist: profile.waist,
+      hip: profile.hip,
+      height: profile.height,
+      inseam: profile.inseam,
+      shoulderToInseam: profile.shoulderToInseam,
+    };
+    const verdict = computeVerdict(bodyProfile, result);
     const byDimension = Object.fromEntries(verdict.map((d) => [d.dimension, d]));
+    const landing = estimateGarmentLanding(result.garmentType, bodyProfile, result);
 
     const check = await prisma.fitCheck.create({
       data: {
@@ -100,8 +106,11 @@ export async function POST(req: NextRequest) {
         waist: byDimension.waist?.garment ?? null,
         hip: byDimension.hip?.garment ?? null,
         length: result.length,
+        rise: result.rise,
+        inseam: result.inseam,
         rawExtraction: result as object,
         verdict: verdict as object,
+        landing: landing as object | undefined,
         images: thumbnails.length > 0 ? thumbnails : undefined,
         confirmed: true,
       },
@@ -110,6 +119,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       result,
       verdict,
+      landing,
       checkId: check.id,
       usage: updatedUsage,
       imagesUsed: allImages.length,

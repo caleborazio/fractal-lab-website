@@ -7,7 +7,8 @@ import {
   MeasurementConvention,
   READING_LABEL,
   computeVerdict,
-  estimateHemPlacement,
+  estimateGarmentLanding,
+  isPantsLike,
   summarizeVerdict,
 } from "@/lib/fit";
 import type { ExtractionResult } from "@/lib/gemini";
@@ -105,10 +106,11 @@ export function FitCheckApp() {
     [profile, extraction]
   );
   const overall = useMemo(() => (verdict ? summarizeVerdict(verdict) : null), [verdict]);
-  const hem = useMemo(
-    () => estimateHemPlacement(profile?.height, extraction?.length),
-    [profile?.height, extraction?.length]
+  const landing = useMemo(
+    () => (profile && extraction ? estimateGarmentLanding(extraction.garmentType, profile, extraction) : null),
+    [profile, extraction]
   );
+  const isPants = extraction ? isPantsLike(extraction.garmentType) : false;
 
   useEffect(() => {
     fetch("/api/profile")
@@ -205,6 +207,7 @@ export function FitCheckApp() {
           );
           const verdictNow = computeVerdict(profile, result);
           const byDimension = Object.fromEntries(verdictNow.map((d) => [d.dimension, d]));
+          const landingNow = estimateGarmentLanding(result.garmentType, profile, result);
           const saveRes = await fetch("/api/checks", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -215,8 +218,11 @@ export function FitCheckApp() {
               waist: byDimension.waist?.garment ?? null,
               hip: byDimension.hip?.garment ?? null,
               length: result.length,
+              rise: result.rise,
+              inseam: result.inseam,
               rawExtraction: result,
               verdict: verdictNow,
+              landing: landingNow,
               images: thumbnails.filter((t): t is string => !!t),
             }),
           });
@@ -235,7 +241,7 @@ export function FitCheckApp() {
   }
 
   function updateExtractionField(
-    field: "bust" | "waist" | "hip" | "length" | "brand" | "size",
+    field: "bust" | "waist" | "hip" | "length" | "rise" | "inseam" | "brand" | "size",
     value: string
   ) {
     if (!extraction) return;
@@ -532,21 +538,50 @@ export function FitCheckApp() {
                 </div>
               );
             })}
-            {extraction.length != null && (
+            {isPants && extraction.rise != null && (
               <p className="mt-2 text-sm text-ink-soft">
-                Garment length: <strong className="text-ink">{extraction.length}&quot;</strong>
-                {hem ? (
-                  <>
-                    {" "}
-                    — rough guess: <strong className="text-ink">{hem.label}</strong>.{" "}
-                    <span className="text-ink-faint">{hem.detail}</span>
-                  </>
-                ) : (
-                  " — worth comparing to where you'd want it to hit. Add your height in your profile for a rough guess at exactly that."
-                )}
+                Rise: <strong className="text-ink">{extraction.rise}&quot;</strong>
               </p>
             )}
           </div>
+
+          {(isPants ? extraction.inseam != null : extraction.length != null) && (
+            <div className="mb-6 rounded border border-line bg-panel px-4 py-4">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="font-mono text-xs uppercase tracking-wide text-ink-faint">
+                  where this will hit you
+                </span>
+                {landing && (
+                  <span className={"text-xs " + (landing.precision === "measured" ? "text-good" : "text-ink-faint")}>
+                    {landing.precision === "measured" ? "from your measurements" : "rough estimate"}
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-ink-soft">
+                {isPants ? "Inseam" : "Length"}:{" "}
+                <strong className="text-ink">{isPants ? extraction.inseam : extraction.length}&quot;</strong>
+              </p>
+              {landing ? (
+                <>
+                  <p className="mt-1 text-base font-medium text-ink">{landing.label}</p>
+                  <p className="text-sm text-ink-soft">{landing.detail}</p>
+                </>
+              ) : (
+                <p className="mt-1 text-sm text-ink-faint">
+                  Worth comparing to where you&apos;d want it to hit. Add your height in Settings for a
+                  rough guess at exactly that
+                  {isPants ? " (or your inseam, for an exact comparison instead)" : ""}.
+                </p>
+              )}
+              {landing?.precision === "estimated" && (
+                <p className="mt-2 text-xs text-ink-faint">
+                  {isPants
+                    ? "Add your inseam in Settings for an exact comparison instead of an estimate from height."
+                    : "Add your inseam (and optionally shoulder-to-inseam) in Settings for a sharper read than the height-based estimate."}
+                </p>
+              )}
+            </div>
+          )}
 
           <details className="mb-6 rounded border border-line bg-panel">
             <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-ink-soft hover:text-ink">
@@ -604,19 +639,50 @@ export function FitCheckApp() {
                 </div>
               ))}
 
-              <label className="flex flex-col gap-1">
-                <span className="font-mono text-xs uppercase tracking-wide text-ink-faint">
-                  length ({extraction.unit})
-                </span>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  className="rounded border border-line bg-bg px-3 py-2"
-                  value={extraction.length ?? ""}
-                  onChange={(e) => updateExtractionField("length", e.target.value)}
-                  placeholder="no data"
-                />
-              </label>
+              {isPants ? (
+                <div className="flex gap-3">
+                  <label className="flex flex-1 flex-col gap-1">
+                    <span className="font-mono text-xs uppercase tracking-wide text-ink-faint">
+                      rise ({extraction.unit})
+                    </span>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      className="rounded border border-line bg-bg px-3 py-2"
+                      value={extraction.rise ?? ""}
+                      onChange={(e) => updateExtractionField("rise", e.target.value)}
+                      placeholder="no data"
+                    />
+                  </label>
+                  <label className="flex flex-1 flex-col gap-1">
+                    <span className="font-mono text-xs uppercase tracking-wide text-ink-faint">
+                      inseam ({extraction.unit})
+                    </span>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      className="rounded border border-line bg-bg px-3 py-2"
+                      value={extraction.inseam ?? ""}
+                      onChange={(e) => updateExtractionField("inseam", e.target.value)}
+                      placeholder="no data"
+                    />
+                  </label>
+                </div>
+              ) : (
+                <label className="flex flex-col gap-1">
+                  <span className="font-mono text-xs uppercase tracking-wide text-ink-faint">
+                    length ({extraction.unit})
+                  </span>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    className="rounded border border-line bg-bg px-3 py-2"
+                    value={extraction.length ?? ""}
+                    onChange={(e) => updateExtractionField("length", e.target.value)}
+                    placeholder="no data"
+                  />
+                </label>
+              )}
               <p className="text-xs text-ink-faint">
                 Changes here update the read above immediately.
               </p>

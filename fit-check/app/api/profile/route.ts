@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { bust, waist, hip, height } = body;
+  const { bust, waist, hip, height, inseam, shoulderToInseam } = body;
 
   if (
     typeof bust !== "number" ||
@@ -32,10 +32,15 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const optionalFields = {
+    height: height ?? null,
+    inseam: inseam ?? null,
+    shoulderToInseam: shoulderToInseam ?? null,
+  };
   const profile = await prisma.profile.upsert({
     where: { id: userId },
-    update: { bust, waist, hip, height: height ?? null },
-    create: { id: userId, bust, waist, hip, height: height ?? null },
+    update: { bust, waist, hip, ...optionalFields },
+    create: { id: userId, bust, waist, hip, ...optionalFields },
   });
 
   return NextResponse.json({ profile });

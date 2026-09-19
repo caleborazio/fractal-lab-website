@@ -13,6 +13,13 @@ model Profile {
   waist               Float
   hip                 Float
   height              Float?
+  // Crotch-to-floor. Optional; the highest-leverage addition for pants-length
+  // accuracy since leg-length-to-height varies more than torso proportions.
+  inseam              Float?
+  // High-shoulder-point to crotch. Optional "bonus" field -- combined with
+  // inseam, replaces the population shoulder-height ratio with a personalized
+  // one. See lib/fit.ts estimateGarmentLanding.
+  shoulderToInseam    Float?
   plan                String     @default("free") // "free" | "paid"
   stripeCustomerId     String?
   stripeSubscriptionId String?
@@ -43,8 +50,17 @@ model FitCheck {
   waist         Float?
   hip           Float?
   length        Float?
+  // Bottoms only (pants/jeans/shorts). rise has no body-side equivalent to
+  // compare against, so it's informational only, not part of `verdict`.
+  rise          Float?
+  inseam        Float?
   rawExtraction Json?
   verdict       Json?
+  // Snapshot of estimateGarmentLanding() at save time (a LandingEstimate),
+  // same reasoning as verdict being a snapshot: the profile it was computed
+  // against can change later, and this should keep reflecting what was true
+  // when the check actually ran.
+  landing       Json?
   confirmed     Boolean  @default(false)
   actualFit     String?
   // Small downscaled thumbnails (data URLs) for the history list -- not the
