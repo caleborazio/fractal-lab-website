@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getUserId } from "@/lib/auth";
+import { getUserId, getUserEmail } from "@/lib/auth";
 import { getStripe, stripeEnabled } from "@/lib/stripe";
 
 export async function POST() {
@@ -17,6 +17,13 @@ export async function POST() {
   const stripe = await getStripe();
   const origin = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.mindthefit.com";
 
+  // A returning Stripe customer already has their email on file there, so
+  // pass `customer` for them; a first-time purchaser has no Stripe record
+  // yet, so prefill from Clerk instead -- either way, nobody retypes an
+  // email we already know. Stripe rejects `customer` and `customer_email`
+  // together, so this is deliberately one or the other, never both.
+  const email = profile?.stripeCustomerId ? null : await getUserEmail();
+
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
     line_items: [{ price: process.env.STRIPE_PRICE_ID, quantity: 1 }],
@@ -27,6 +34,7 @@ export async function POST() {
     // card for a $0 charge just because subscriptions normally require one.
     payment_method_collection: "if_required",
     customer: profile?.stripeCustomerId ?? undefined,
+    customer_email: email ?? undefined,
     client_reference_id: userId,
     branding_settings: { display_name: "Mind the Fit" },
     success_url: `${origin}/app`,
