@@ -10,7 +10,7 @@ const STEPS = [
   {
     n: "02",
     title: "Paste a listing or upload photos",
-    body: "Drop in a link from Depop, Poshmark, eBay, Vinted, or wherever — or upload a photo of the tag, a measurements card, or a flat-lay.",
+    body: "Paste a link from Poshmark or Vinted and it reads the listing directly. From anywhere else — Depop, eBay, an Instagram post, a vintage seller's own site — upload a photo of the tag, a measurements card, or a flat-lay instead.",
   },
   {
     n: "03",
@@ -34,7 +34,7 @@ const FAQS = [
   },
   {
     q: "Which sites work with a pasted link?",
-    a: "Most resale marketplaces work directly. A few (notably sites that block automated access) don't support links yet — for those, upload a screenshot or photo instead and it works the same way.",
+    a: "Poshmark and Vinted work directly today. Many others — including Depop, eBay, and Instagram — actively block automated reading, so a pasted link from those won't work yet. For those, upload a screenshot or photo of the tag, measurements, or a flat-lay instead, and it works the same way.",
   },
 ];
 
