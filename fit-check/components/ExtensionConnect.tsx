@@ -60,16 +60,16 @@ export function ExtensionConnect() {
 
   return (
     <div className="rounded-lg border border-line bg-panel px-5 py-4">
-      <p className="mb-1 text-sm font-medium">Browser extension</p>
+      <p className="mb-1 text-sm font-medium">Browser extension &amp; iPhone Shortcut</p>
       <p className="mb-3 max-w-prose text-sm text-ink-soft">
-        Check the fit right from a listing page, without pasting a link — works on sites that
-        block Mind the Fit from reading them directly.
+        Check the fit right from a listing, without leaving the page or app you&apos;re on. The
+        same connection code works for both.
       </p>
 
       {token ? (
         <div className="mb-3">
           <p className="mb-2 text-xs text-ink-faint">
-            Copy this code, open the Mind the Fit extension, and paste it in. It&apos;s shown only once.
+            Copy this code into the Mind the Fit extension or iPhone Shortcut. It&apos;s shown only once.
           </p>
           <div className="flex items-center gap-2">
             <code className="flex-1 overflow-x-auto rounded border border-line-strong bg-bg px-3 py-2 text-xs">
@@ -86,8 +86,8 @@ export function ExtensionConnect() {
       ) : (
         connected && (
           <p className="mb-3 text-xs text-ink-faint">
-            An extension is connected. Regenerating the code disconnects it until you reconnect
-            with the new one.
+            Connected. Regenerating the code disconnects your extension and Shortcut until you
+            paste the new code into each.
           </p>
         )
       )}

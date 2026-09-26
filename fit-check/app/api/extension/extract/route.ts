@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { extractMeasurements } from "@/lib/gemini";
-import { computeVerdict, estimateGarmentLanding } from "@/lib/fit";
 import { getProfileIdFromExtensionToken } from "@/lib/extensionAuth";
-import { checkUsage, recordUsage } from "@/lib/usage";
+import { checkUsage } from "@/lib/usage";
 import { prisma } from "@/lib/prisma";
 import { PLUS_PRICE_LABEL } from "@/lib/plan";
 import { fetchImageAsBase64 } from "@/lib/fetchListing";
+import { runAndSaveCheck } from "@/lib/runCheck";
 
 // On some sites (confirmed on ThredUp) the image CDN doesn't allow anonymous
 // CORS at all, so every gallery photo -- not just the odd tainted one --
@@ -79,49 +78,15 @@ export async function POST(req: NextRequest) {
     const imagesStillUnreadable = imageUrls.length - recoveredImages.length;
     const allImages = [...images, ...recoveredImages];
 
-    const result = await extractMeasurements(allImages, pageText);
-    // Only a successful extraction burns a free check, same rule as the web app.
-    await recordUsage(profileId);
-    const updatedUsage = await checkUsage(profileId);
-
-    const bodyProfile = {
-      bust: profile.bust,
-      waist: profile.waist,
-      hip: profile.hip,
-      height: profile.height,
-      inseam: profile.inseam,
-      shoulderToInseam: profile.shoulderToInseam,
-    };
-    const verdict = computeVerdict(bodyProfile, result);
-    const byDimension = Object.fromEntries(verdict.map((d) => [d.dimension, d]));
-    const landing = estimateGarmentLanding(result.garmentType, bodyProfile, result);
-
-    const check = await prisma.fitCheck.create({
-      data: {
-        profileId,
-        brand: result.brand,
-        garmentType: result.garmentType,
-        sourceUrl: sourceUrl ?? null,
-        bust: byDimension.bust?.garment ?? null,
-        waist: byDimension.waist?.garment ?? null,
-        hip: byDimension.hip?.garment ?? null,
-        length: result.length,
-        rise: result.rise,
-        inseam: result.inseam,
-        rawExtraction: result as object,
-        verdict: verdict as object,
-        landing: landing as object | undefined,
-        images: thumbnails.length > 0 ? thumbnails : undefined,
-        confirmed: true,
-      },
+    const outcome = await runAndSaveCheck(profile, {
+      images: allImages,
+      text: pageText,
+      sourceUrl,
+      thumbnails,
     });
 
     return NextResponse.json({
-      result,
-      verdict,
-      landing,
-      checkId: check.id,
-      usage: updatedUsage,
+      ...outcome,
       imagesUsed: allImages.length,
       imagesUnreadable: imagesStillUnreadable,
     });

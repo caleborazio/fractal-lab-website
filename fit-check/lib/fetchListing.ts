@@ -3,6 +3,10 @@ import * as cheerio from "cheerio";
 export interface FetchedListing {
   text: string;
   images: { base64: string; mimeType: string }[];
+  /** Source URLs of the images above, same order -- lets callers without a
+   * browser to downscale in (e.g. the iPhone Shortcut path) show history
+   * thumbnails by URL instead of storing full-size image data. */
+  imageUrls: string[];
 }
 
 const BROWSER_UA =
@@ -69,8 +73,8 @@ function extractJsonAfter(html: string, marker: string): unknown | null {
       else if (ch === '"') inString = false;
     } else {
       if (ch === '"') inString = true;
-      else if (ch === "{") depth++;
-      else if (ch === "}") {
+      else if (ch === "{" || ch === "[") depth++;
+      else if (ch === "}" || ch === "]") {
         depth--;
         if (depth === 0) {
           end = i + 1;
@@ -163,6 +167,41 @@ function extractPoshmarkState(html: string): PoshmarkExtraction | null {
   if (textParts.length === 0 && imageUrls.length === 0) return null;
 
   return { text: textParts.join("\n\n").slice(0, 6000), imageUrls };
+}
+
+/**
+ * Next.js App Router pages (Vinted) ship their data as "flight" chunks:
+ * self.__next_f.push([1,"<JS-string-escaped payload>"]). Decoding and
+ * concatenating the string chunks reconstructs the raw payload, where the
+ * listing's data appears as ordinary JSON.
+ */
+function decodeNextFlight(html: string): string {
+  const parts: string[] = [];
+  for (const m of html.matchAll(/self\.__next_f\.push\(\[1,"((?:[^"\\]|\\.)*)"\]\)/g)) {
+    try {
+      parts.push(JSON.parse(`"${m[1]}"`));
+    } catch {
+      // Skip a chunk that doesn't decode rather than losing the rest.
+    }
+  }
+  return parts.join("");
+}
+
+/**
+ * Vinted's JSON-LD declares only ONE image per listing, so the generic
+ * extractor only ever saw the first photo -- measurement shots are usually
+ * further in. The full set lives in the flight payload as
+ * {"item_id":"<id>","photos":[...]}. Keying on the listing's own id (from
+ * the URL) keeps "similar items" photos elsewhere on the page out.
+ */
+function extractVintedPhotoUrls(html: string, pageUrl: string): string[] {
+  const itemId = pageUrl.match(/vinted\.[a-z.]+\/items\/(\d+)/i)?.[1];
+  if (!itemId) return [];
+  const photos = extractJsonAfter(decodeNextFlight(html), `"item_id":"${itemId}","photos":`);
+  if (!Array.isArray(photos)) return [];
+  return photos
+    .map((p: { full_size_url?: string; url?: string }) => p?.full_size_url || p?.url)
+    .filter((u): u is string => typeof u === "string" && u.length > 0);
 }
 
 interface JsonLdProduct {
@@ -294,6 +333,7 @@ function extractGeneric(
 export async function fetchListing(url: string): Promise<FetchedListing | null> {
   const { signal, clear } = withTimeoutSignal(PAGE_TIMEOUT_MS);
   let html: string;
+  let finalUrl = url;
   try {
     const res = await fetch(url, {
       signal,
@@ -301,22 +341,29 @@ export async function fetchListing(url: string): Promise<FetchedListing | null> 
     });
     if (!res.ok) return null;
     html = await res.text();
+    // Share links are often short links that redirect (posh.mk -> poshmark.com).
+    finalUrl = res.url || url;
   } catch {
     return null;
   } finally {
     clear();
   }
 
-  const extracted = extractPoshmarkState(html) ?? extractGeneric(html, url);
+  const extracted = extractPoshmarkState(html) ?? extractGeneric(html, finalUrl);
+  const vintedPhotos = extractVintedPhotoUrls(html, finalUrl);
+  if (vintedPhotos.length > 0) extracted.imageUrls = vintedPhotos;
 
-  const fetchedImages = await Promise.all(
-    extracted.imageUrls.slice(0, MAX_IMAGES).map(fetchImageAsBase64)
-  );
-  const images = fetchedImages
-    .filter((img): img is { base64: string; mimeType: string } => !!img)
-    .slice(0, MAX_IMAGES);
+  const candidateUrls = extracted.imageUrls.slice(0, MAX_IMAGES);
+  const fetchedImages = await Promise.all(candidateUrls.map(fetchImageAsBase64));
+  const images: FetchedListing["images"] = [];
+  const imageUrls: string[] = [];
+  fetchedImages.forEach((img, i) => {
+    if (!img) return;
+    images.push(img);
+    imageUrls.push(candidateUrls[i]);
+  });
 
   if (!extracted.text && images.length === 0) return null;
 
-  return { text: extracted.text, images };
+  return { text: extracted.text, images, imageUrls };
 }
