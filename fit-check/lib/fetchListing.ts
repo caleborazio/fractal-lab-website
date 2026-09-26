@@ -106,6 +106,10 @@ interface PoshmarkListingDetails {
   size_obj?: { display_with_size_system?: string; display?: string };
   brand?: string;
   comments?: PoshmarkComment[];
+  // The listing's main photo lives here, NOT in `pictures` -- `pictures` is
+  // only the additional photos. Reading `pictures` alone silently drops the
+  // cover (confirmed on a live listing: cover hash absent from pictures).
+  cover_shot?: PoshmarkPicture;
   pictures?: PoshmarkPicture[];
 }
 
@@ -147,11 +151,14 @@ function extractPoshmarkState(html: string): PoshmarkExtraction | null {
     commentsText ? `Buyer/seller comments on this listing:\n${commentsText}` : null,
   ].filter((s): s is string => !!s && s.trim().length > 0);
 
-  const imageUrls = Array.isArray(details.pictures)
-    ? details.pictures
-        .map((p) => p.url_large || p.url || p.url_small)
+  const photos = [details.cover_shot, ...(Array.isArray(details.pictures) ? details.pictures : [])];
+  const imageUrls = [
+    ...new Set(
+      photos
+        .map((p) => p?.url_large || p?.url || p?.url_small)
         .filter((u): u is string => !!u)
-    : [];
+    ),
+  ];
 
   if (textParts.length === 0 && imageUrls.length === 0) return null;
 
