@@ -28,15 +28,27 @@ model Profile {
   // otherwise it's stale from a prior month and reads as 0 (see lib/usage.ts).
   checksUsedThisMonth Int        @default(0)
   usageMonth          String     @default("")
-  // Bearer token the browser extension sends instead of a Clerk session
-  // cookie -- generated on demand from Settings, regenerating invalidates
-  // any extension already connected with the old value.
-  extensionToken      String?    @unique
   createdAt           DateTime   @default(now())
   updatedAt           DateTime   @updatedAt
   checks              FitCheck[]
+  connections         ConnectionToken[]
 
   @@index([stripeSubscriptionId])
+}
+
+// One per connected surface (browser extension, iPhone app, Shortcut), so
+// adding or revoking one never breaks the others. Only a SHA-256 hash of
+// the code is stored -- the code itself is shown once, at creation.
+model ConnectionToken {
+  id         String    @id @default(cuid())
+  profileId  String
+  profile    Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  label      String
+  tokenHash  String    @unique
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+
+  @@index([profileId])
 }
 
 model FitCheck {

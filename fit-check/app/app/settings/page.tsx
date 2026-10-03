@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { AppHeader } from "@/components/AppHeader";
 import { AccountActions } from "@/components/AccountActions";
 import { MeasurementsForm } from "@/components/MeasurementsForm";
-import { ExtensionConnect } from "@/components/ExtensionConnect";
+import { ConnectionsManager } from "@/components/ConnectionsManager";
 import { FREE_CHECKS_PER_MONTH } from "@/lib/plan";
 
 export default async function SettingsPage() {
@@ -43,7 +43,7 @@ export default async function SettingsPage() {
       <MeasurementsForm />
 
       <h2 className="mb-3 mt-10 text-lg font-semibold">Connections</h2>
-      <ExtensionConnect />
+      <ConnectionsManager />
 
       <Link
         href="/"
