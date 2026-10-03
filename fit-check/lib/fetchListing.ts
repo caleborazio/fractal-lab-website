@@ -31,6 +31,18 @@ function withTimeoutSignal(ms: number) {
   return { signal: controller.signal, clear: () => clearTimeout(timer) };
 }
 
+/**
+ * ThredUp serves the same photo at several sizes by filename, and a gallery
+ * scrape usually grabs the thumbnail (thumb.jpg is ~3 KB) -- far too small
+ * for Gemini to read a measurement diagram. retina.jpg is the full photo.
+ */
+export function upgradeImageUrl(url: string): string {
+  return url.replace(
+    /(cf-assets-thredup\.thredup\.com\/assets\/\d+\/)(?:thumb|store_grid|small|medium|large|xlarge)\.jpg/i,
+    "$1retina.jpg"
+  );
+}
+
 export async function fetchImageAsBase64(
   url: string
 ): Promise<{ base64: string; mimeType: string } | null> {

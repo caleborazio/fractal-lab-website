@@ -3,7 +3,7 @@ import { getProfileIdFromExtensionToken } from "@/lib/extensionAuth";
 import { checkUsage } from "@/lib/usage";
 import { prisma } from "@/lib/prisma";
 import { PLUS_PRICE_LABEL } from "@/lib/plan";
-import { fetchImageAsBase64 } from "@/lib/fetchListing";
+import { fetchImageAsBase64, upgradeImageUrl } from "@/lib/fetchListing";
 import { runAndSaveCheck } from "@/lib/runCheck";
 
 // On some sites (confirmed on ThredUp) the image CDN doesn't allow anonymous
@@ -61,8 +61,18 @@ export async function POST(req: NextRequest) {
   // bot-protected. A direct server-side fetch of the image URL often still
   // works even when the same site blocks a server-side fetch of the HTML
   // page, since image CDNs are frequently unprotected static asset hosts.
+  // Also sent by the iPhone share extension, which reads the page on the
+  // phone and passes photo links rather than image data. Upgrade known
+  // thumbnail links to full size first, then dedupe (thumb + full of the
+  // same photo collapse to one).
   const imageUrls: string[] = Array.isArray(body.imageUrls)
-    ? body.imageUrls.slice(0, MAX_FALLBACK_IMAGE_URLS)
+    ? [
+        ...new Set(
+          (body.imageUrls as unknown[])
+            .filter((u): u is string => typeof u === "string")
+            .map(upgradeImageUrl)
+        ),
+      ].slice(0, MAX_FALLBACK_IMAGE_URLS)
     : [];
 
   if (images.length === 0 && imageUrls.length === 0 && !pageText) {
