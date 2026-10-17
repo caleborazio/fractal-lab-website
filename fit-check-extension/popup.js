@@ -155,7 +155,7 @@ function summarize(verdicts) {
 }
 
 function formatInches(n) {
-  return Number.isInteger(n) ? `${n}"` : `${n.toFixed(1)}"`;
+  return Number.isInteger(n) ? `${n}″` : `${n.toFixed(1)}″`;
 }
 
 function formatEase(ease) {
@@ -164,36 +164,67 @@ function formatEase(ease) {
   return ease >= 0 ? `${abs} of room` : `${abs} short`;
 }
 
+// Listing-derived text (brand, notes) goes into innerHTML below, so escape it.
+function esc(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+}
+
+// Same stamp as the web app's FitTag.
+function stampFor(verdicts, overall) {
+  if (overall.tone === "neutral") return null;
+  if (overall.tone === "good") return { label: "Good fit", tone: "good" };
+  const tight = verdicts.some((v) => v.reading === "tight");
+  const loose = verdicts.some((v) => v.reading === "loose");
+  return { label: tight && loose ? "Mixed fit" : tight ? "Runs snug" : "Runs loose", tone: "warn" };
+}
+
+// Garment (solid) against you (dashed), both measured from a few inches below
+// the smaller number so a 2″ difference is visible. Exact numbers sit below.
+function bars(garment, body) {
+  const base = Math.max(0, Math.min(garment, body) - 6);
+  const span = Math.max(garment, body) - base;
+  const g = ((garment - base) / span) * 100;
+  const b = ((body - base) / span) * 100;
+  return `<div class="bars" aria-hidden="true">
+      <span class="bar-garment" style="width:${g}%"></span><span class="tick-garment" style="left:calc(${g}% - 1px)"></span>
+      <span class="bar-you" style="width:${b}%"></span><span class="tick-you" style="left:calc(${b}% - 1px)"></span>
+    </div>`;
+}
+
 function renderResult(data, { checkedAt } = {}) {
   resultEl.classList.remove("hidden");
   const { result, verdict = [] } = data;
   const overall = summarize(verdict);
-  const brandLine = result.brand ? `${result.brand} — ` : "";
+  const stamp = stampFor(verdict, overall);
+  const title = [result.brand, result.garmentType].filter(Boolean).map(esc).join(" · ");
 
   const rows = verdict
     .map((v) => {
       const detail =
-        v.reading === "no_data"
-          ? ""
-          : `<p class="dim-detail">${formatInches(v.garment)} garment vs your ${formatInches(
-              v.body
-            )} — ${formatEase(v.ease)}</p>`;
+        v.garment == null
+          ? `No measurement given · your ${formatInches(v.body)}`
+          : `${formatInches(v.garment)} garment · your ${formatInches(v.body)} · ${formatEase(v.ease)}`;
       return `
-        <div class="result-dim">
-          <div class="result-dim-head">
-            <span class="dim">${v.dimension}</span>
-            <span class="reading-badge tone-${READING_TONE[v.reading]}">${READING_LABEL[v.reading]}</span>
+        <div class="dim">
+          <div class="dim-head">
+            <span class="dim-name">${esc(v.dimension)}</span>
+            <span class="dim-reading tone-${READING_TONE[v.reading]}">${READING_LABEL[v.reading]}</span>
           </div>
-          ${detail}
+          ${v.garment != null ? bars(v.garment, v.body) : ""}
+          <p class="dim-detail">${detail}</p>
         </div>`;
     })
     .join("");
+
+  const legend = verdict.some((v) => v.garment != null)
+    ? `<div class="legend"><span><i class="key-garment"></i>garment</span><span><i class="key-you"></i>you</span></div>`
+    : "";
 
   const imagesNote =
     data.imagesUnreadable > 0
       ? `<p class="muted">Read ${data.imagesUsed} photo${data.imagesUsed === 1 ? "" : "s"} from this page — ${
           data.imagesUnreadable
-        } couldn't be captured. The listing text usually covers it, but a screenshot uploaded from mindthefit.com works too.</p>`
+        } couldn't be captured. The listing text usually covers it.</p>`
       : "";
 
   const photoNote = result.measuredFromPhoto
@@ -202,8 +233,10 @@ function renderResult(data, { checkedAt } = {}) {
 
   const landing = data.landing
     ? `<div class="landing">
-        <p class="landing-label">${data.landing.label}</p>
-        <p class="landing-detail">${data.landing.detail}</p>
+        <p class="landing-eyebrow">Where it lands</p>
+        <p class="landing-label">${esc(data.landing.label)}</p>
+        <p class="landing-detail">${esc(data.landing.detail)}</p>
+        <p class="landing-note">${data.landing.precision === "measured" ? "from your own measurements" : "a rough guess from your height"}</p>
       </div>`
     : "";
 
@@ -215,15 +248,18 @@ function renderResult(data, { checkedAt } = {}) {
 
   resultEl.innerHTML = `
     ${earlierNote}
-    <p class="result-title">${brandLine}${result.garmentType || "item"}</p>
-    <p class="result-headline tone-${overall.tone}">${overall.headline}</p>
-    ${result.summary ? `<p class="muted">${result.summary}</p>` : ""}
+    <section class="tag">
+      ${stamp ? `<div class="stamp tone-${stamp.tone}"><span>${stamp.label}</span></div>` : ""}
+      <p class="tag-title">${title || "This listing"}</p>
+      <h1 class="tag-headline">${esc(overall.headline)}</h1>
+      <div class="dims">${rows}</div>
+      ${legend}
+    </section>
     ${photoNote}
-    ${rows}
     ${landing}
-    ${result.fitNotes ? `<p class="muted">${result.fitNotes}</p>` : ""}
+    ${result.fitNotes ? `<p class="muted">${esc(result.fitNotes)}</p>` : ""}
     ${imagesNote}
-    <a class="result-link" href="#" id="view-history-link">View full details in your history →</a>
+    <a class="result-link" href="#" id="view-history-link">View in your history →</a>
   `;
   document.getElementById("view-history-link").addEventListener("click", (e) => {
     e.preventDefault();

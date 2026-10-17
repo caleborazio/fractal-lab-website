@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Mind the Fit",
   "description": "Check if a secondhand or vintage listing will fit you, right from the page you're on.",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
