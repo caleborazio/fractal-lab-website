@@ -1,6 +1,10 @@
 const API_BASE = "https://www.mindthefit.com";
 const TOKEN_KEY = "mtf_token";
 
+let token = null;
+let currentTab = null;
+let retryAction = null;
+
 const READING_LABEL = {
   tight: "Will be tight",
   fitted: "Fitted, true to size",
@@ -48,24 +52,31 @@ document.getElementById("signin-btn").addEventListener("click", () => {
   window.close();
 });
 
+// Signing in (here or on the connect page) and signing out both go through
+// storage, so this one listener keeps the popup in step.
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === "local" && changes[TOKEN_KEY]) showView(changes[TOKEN_KEY].newValue ? "main" : "connect");
+  if (area !== "local" || !changes[TOKEN_KEY]) return;
+  token = changes[TOKEN_KEY].newValue || null;
+  if (token) {
+    showView("main");
+    checkCurrentPage();
+  } else {
+    showView("connect");
+  }
 });
 
 connectBtn.addEventListener("click", async () => {
-  const token = tokenInput.value.trim();
+  const code = tokenInput.value.trim();
   connectError.classList.add("hidden");
-  if (!token) {
+  if (!code) {
     connectError.textContent = "Paste the code from Settings first.";
     connectError.classList.remove("hidden");
     return;
   }
-  await chrome.storage.local.set({ [TOKEN_KEY]: token });
-  showView("main");
+  await chrome.storage.local.set({ [TOKEN_KEY]: code });
 });
 
 document.getElementById("disconnect-btn").addEventListener("click", async () => {
-  const { [TOKEN_KEY]: token } = await chrome.storage.local.get(TOKEN_KEY);
   // Revoke it on the server too, so it doesn't linger in Settings → Connections.
   if (token) {
     fetch(`${API_BASE}/api/extension/disconnect`, {
@@ -73,14 +84,16 @@ document.getElementById("disconnect-btn").addEventListener("click", async () => 
       headers: { Authorization: `Bearer ${token}` },
     }).catch(() => {});
   }
-  await chrome.storage.local.remove(TOKEN_KEY);
   tokenInput.value = "";
-  showView("connect");
+  await chrome.storage.local.remove(TOKEN_KEY);
 });
 
 // --- Check-the-fit flow -------------------------------------------------
 
-const checkBtn = document.getElementById("check-btn");
+const statusEl = document.getElementById("status");
+const statusText = document.getElementById("status-text");
+const notListingEl = document.getElementById("not-listing");
+const retryBtn = document.getElementById("retry-btn");
 const usageNote = document.getElementById("usage-note");
 const resultEl = document.getElementById("result");
 const mainError = document.getElementById("main-error");
@@ -92,6 +105,27 @@ function setMainError(message) {
   } else {
     mainError.classList.add("hidden");
   }
+}
+
+function setStatus(text) {
+  statusText.textContent = text || "";
+  statusEl.classList.toggle("hidden", !text);
+}
+
+function resetMain() {
+  setStatus(null);
+  setMainError(null);
+  notListingEl.classList.add("hidden");
+  retryBtn.classList.add("hidden");
+  resultEl.classList.add("hidden");
+}
+
+function timeAgo(iso) {
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+  if (days <= 0) return "earlier today";
+  if (days === 1) return "yesterday";
+  if (days < 30) return `${days} days ago`;
+  return `on ${new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
 }
 
 // Same synthesis as lib/fit.ts's summarizeVerdict, kept in sync by hand --
@@ -130,7 +164,7 @@ function formatEase(ease) {
   return ease >= 0 ? `${abs} of room` : `${abs} short`;
 }
 
-function renderResult(data) {
+function renderResult(data, { checkedAt } = {}) {
   resultEl.classList.remove("hidden");
   const { result, verdict = [] } = data;
   const overall = summarize(verdict);
@@ -173,7 +207,14 @@ function renderResult(data) {
       </div>`
     : "";
 
+  // An earlier check of this same listing, re-scored against today's
+  // measurements -- re-reading it would spend another check, so it's opt-in.
+  const earlierNote = checkedAt
+    ? `<p class="checked-before">You checked this listing ${timeAgo(checkedAt)}. <a href="#" id="check-again-link">Check again</a></p>`
+    : "";
+
   resultEl.innerHTML = `
+    ${earlierNote}
     <p class="result-title">${brandLine}${result.garmentType || "item"}</p>
     <p class="result-headline tone-${overall.tone}">${overall.headline}</p>
     ${result.summary ? `<p class="muted">${result.summary}</p>` : ""}
@@ -188,6 +229,10 @@ function renderResult(data) {
     e.preventDefault();
     chrome.tabs.create({ url: `${API_BASE}/app/history` });
   });
+  document.getElementById("check-again-link")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    runCheck();
+  });
 
   if (data.usage && data.usage.checksRemaining !== null) {
     usageNote.textContent = `${data.usage.checksRemaining} free checks left this month`;
@@ -195,6 +240,22 @@ function renderResult(data) {
   } else {
     usageNote.classList.add("hidden");
   }
+}
+
+// Runs inside the page. Every check that reads something counts against the
+// free plan, so opening the popup only checks automatically on pages that
+// look like a product listing: the site's own product markup, or a resale
+// site's item-page address.
+function looksLikeListing() {
+  const productMarkup = Array.from(document.querySelectorAll('script[type="application/ld+json"]')).some((s) =>
+    /"@type"\s*:\s*(\[[^\]]*)?"Product"/.test(s.textContent || "")
+  );
+  const ogType = document.querySelector('meta[property="og:type"]')?.getAttribute("content") || "";
+  const priceMeta = !!document.querySelector(
+    'meta[property="product:price:amount"], meta[property="og:price:amount"], [itemprop="price"]'
+  );
+  const itemPath = /\/(listing|listings|product|products|item|items|itm)\/|\.shtml$/i.test(location.pathname);
+  return productMarkup || /product/i.test(ogType) || priceMeta || itemPath;
 }
 
 // Runs inside the page itself (not the extension) -- this is the whole
@@ -313,69 +374,140 @@ function dataUrlToPart(dataUrl) {
   return { mimeType: match[1], base64: match[2] };
 }
 
-checkBtn.addEventListener("click", async () => {
-  setMainError(null);
-  resultEl.classList.add("hidden");
-  checkBtn.disabled = true;
-  checkBtn.textContent = "Reading the page…";
+class SignedOut extends Error {}
 
+async function api(path, body) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 401) {
+    // Signed out or disconnected elsewhere -- send them back through sign-in.
+    await chrome.storage.local.remove(TOKEN_KEY);
+    showView("connect");
+    throw new SignedOut();
+  }
+  if (!res.ok) throw new Error(data.error || "Couldn't check this listing.");
+  return data;
+}
+
+function showFailure(err, retry) {
+  if (err instanceof SignedOut) return;
+  setStatus(null);
+  setMainError(err instanceof Error ? err.message : "Something went wrong.");
+  retryAction = retry;
+  retryBtn.classList.remove("hidden");
+}
+
+// A check that's still running when the popup closes (a click anywhere on the
+// page closes it) keeps going on the server and lands in history. This marker
+// lets the next popup wait for that result instead of paying for a second
+// check of the same listing.
+const PENDING_MAX_MS = 120000;
+const pendingKey = (url) => `pending:${url.split(/[?#]/)[0].replace(/\/+$/, "").toLowerCase()}`;
+
+async function readPage(func) {
   try {
-    const { [TOKEN_KEY]: token } = await chrome.storage.local.get(TOKEN_KEY);
-    if (!token) {
-      showView("connect");
+    const [{ result }] = await chrome.scripting.executeScript({ target: { tabId: currentTab.id }, func });
+    return result;
+  } catch {
+    throw new Error("Chrome doesn't let extensions read this page. Open a listing and try again.");
+  }
+}
+
+// Opening the popup is the request to check: show an earlier result for this
+// listing if there is one, otherwise check it right away.
+async function checkCurrentPage() {
+  resetMain();
+  if (!currentTab?.id || !/^https?:/.test(currentTab.url || "")) {
+    setMainError("Open a listing, then click Mind the Fit.");
+    return;
+  }
+  try {
+    setStatus("Looking for this listing…");
+    const earlier = await api("/api/extension/earlier", { url: currentTab.url });
+    if (earlier.found) {
+      setStatus(null);
+      renderResult(earlier, { checkedAt: earlier.checkedAt });
       return;
     }
 
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!tab?.id) throw new Error("Couldn't find the current tab.");
+    const key = pendingKey(currentTab.url);
+    const { [key]: startedAt } = await chrome.storage.session.get(key);
+    if (startedAt && Date.now() - startedAt < PENDING_MAX_MS) {
+      await waitForUnfinishedCheck(startedAt);
+      return;
+    }
 
-    const [{ result: page }] = await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      func: extractPageData,
-    });
+    if (!(await readPage(looksLikeListing))) {
+      setStatus(null);
+      notListingEl.classList.remove("hidden");
+      return;
+    }
+    await runCheck();
+  } catch (err) {
+    showFailure(err, checkCurrentPage);
+  }
+}
 
+async function waitForUnfinishedCheck(startedAt) {
+  setStatus("Still checking this listing…");
+  while (Date.now() - startedAt < PENDING_MAX_MS) {
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    const earlier = await api("/api/extension/earlier", { url: currentTab.url });
+    if (earlier.found) {
+      setStatus(null);
+      renderResult(earlier);
+      await chrome.storage.session.remove(pendingKey(currentTab.url));
+      return;
+    }
+  }
+  await chrome.storage.session.remove(pendingKey(currentTab.url));
+  throw new Error("That check didn't finish.");
+}
+
+async function runCheck() {
+  resetMain();
+  const key = pendingKey(currentTab.url);
+  await chrome.storage.session.set({ [key]: Date.now() });
+  try {
+    setStatus("Reading the page…");
+    const page = await readPage(extractPageData);
     if (!page.text && page.images.length === 0 && page.failedImageUrls.length === 0) {
       throw new Error("Didn't find any listing text or photos on this page.");
     }
 
-    checkBtn.textContent = "Checking the fit…";
-
-    const res = await fetch(`${API_BASE}/api/extension/extract`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        sourceUrl: page.url,
-        pageText: page.text,
-        images: page.images.map(dataUrlToPart).filter(Boolean),
-        thumbnails: page.thumbnails,
-        imageUrls: page.failedImageUrls,
-      }),
+    setStatus("Checking the fit…");
+    const data = await api("/api/extension/extract", {
+      sourceUrl: page.url,
+      pageText: page.text,
+      images: page.images.map(dataUrlToPart).filter(Boolean),
+      thumbnails: page.thumbnails,
+      imageUrls: page.failedImageUrls,
     });
-    const data = await res.json();
-
-    if (res.status === 401) {
-      // Token was revoked/regenerated elsewhere -- send them back through connect.
-      await chrome.storage.local.remove(TOKEN_KEY);
-      showView("connect");
-      return;
-    }
-    if (!res.ok) throw new Error(data.error || "Couldn't check this listing.");
-
+    setStatus(null);
     renderResult(data);
   } catch (err) {
-    setMainError(err instanceof Error ? err.message : "Something went wrong.");
+    showFailure(err, runCheck);
   } finally {
-    checkBtn.disabled = false;
-    checkBtn.textContent = "Check the fit";
+    await chrome.storage.session.remove(key);
   }
-});
+}
+
+document.getElementById("check-anyway-btn").addEventListener("click", () => runCheck());
+retryBtn.addEventListener("click", () => retryAction?.());
 
 // --- Init -----------------------------------------------------------------
 
 (async function init() {
-  const { [TOKEN_KEY]: token } = await chrome.storage.local.get(TOKEN_KEY);
-  showView(token ? "main" : "connect");
+  ({ [TOKEN_KEY]: token } = await chrome.storage.local.get(TOKEN_KEY));
+  if (!token) {
+    showView("connect");
+    return;
+  }
+  showView("main");
+  [currentTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  checkCurrentPage();
 })();

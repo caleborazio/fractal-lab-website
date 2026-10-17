@@ -39,14 +39,7 @@ export async function runAndSaveCheck(profile: Profile, input: CheckInput): Prom
   await recordUsage(profile.id);
   const usage = await checkUsage(profile.id);
 
-  const body = {
-    bust: profile.bust,
-    waist: profile.waist,
-    hip: profile.hip,
-    height: profile.height,
-    inseam: profile.inseam,
-    shoulderToInseam: profile.shoulderToInseam,
-  };
+  const body = bodyFromProfile(profile);
   const verdict = computeVerdict(body, result);
   const byDimension = Object.fromEntries(verdict.map((d) => [d.dimension, d]));
   const landing = estimateGarmentLanding(result.garmentType, body, result);
@@ -72,6 +65,63 @@ export async function runAndSaveCheck(profile: Profile, input: CheckInput): Prom
   });
 
   return { result, verdict, landing, checkId: check.id, usage };
+}
+
+function bodyFromProfile(profile: Profile) {
+  return {
+    bust: profile.bust,
+    waist: profile.waist,
+    hip: profile.hip,
+    height: profile.height,
+    inseam: profile.inseam,
+    shoulderToInseam: profile.shoulderToInseam,
+  };
+}
+
+/** Host + path, lowercased, without "www." or a trailing slash. Query strings
+ * and hashes are dropped: they're tracking and UI state on resale sites, and
+ * would otherwise hide an earlier check of the very same listing. */
+export function listingKey(url: string): string | null {
+  try {
+    const u = new URL(url);
+    return `${u.host.replace(/^www\./, "")}${u.pathname.replace(/\/+$/, "")}`.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+const EARLIER_CHECKS_SCANNED = 200;
+
+/**
+ * The most recent saved check of this listing, re-scored against the
+ * person's CURRENT measurements -- so reopening the extension on a listing
+ * shows the answer again without re-reading the page or spending a check.
+ */
+export async function findEarlierCheck(
+  profile: Profile,
+  url: string
+): Promise<(Omit<CheckOutcome, "usage"> & { checkedAt: Date }) | null> {
+  const key = listingKey(url);
+  if (!key) return null;
+
+  const checks = await prisma.fitCheck.findMany({
+    where: { profileId: profile.id, sourceUrl: { not: null } },
+    orderBy: { createdAt: "desc" },
+    take: EARLIER_CHECKS_SCANNED,
+    select: { id: true, sourceUrl: true, rawExtraction: true, createdAt: true },
+  });
+  const match = checks.find((c) => c.rawExtraction && c.sourceUrl && listingKey(c.sourceUrl) === key);
+  if (!match) return null;
+
+  const result = match.rawExtraction as unknown as ExtractionResult;
+  const body = bodyFromProfile(profile);
+  return {
+    result,
+    verdict: computeVerdict(body, result),
+    landing: estimateGarmentLanding(result.garmentType, body, result),
+    checkId: match.id,
+    checkedAt: match.createdAt,
+  };
 }
 
 function inches(n: number): string {

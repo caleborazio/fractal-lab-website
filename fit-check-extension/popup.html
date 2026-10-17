@@ -23,13 +23,18 @@
     </section>
 
     <section id="main-view" class="view hidden">
-      <p class="lead">Check the listing on this page — no need to copy anything.</p>
-      <button id="check-btn" class="btn-primary">Check the fit</button>
-      <p id="usage-note" class="muted hidden"></p>
+      <p id="status" class="status hidden"><span class="spinner"></span><span id="status-text"></span></p>
+
+      <div id="not-listing" class="not-listing hidden">
+        <p class="lead">This page doesn't look like a listing, so it wasn't checked.</p>
+        <button id="check-anyway-btn" class="btn-secondary">Check it anyway</button>
+      </div>
 
       <div id="result" class="result hidden"></div>
 
       <p id="main-error" class="error hidden"></p>
+      <button id="retry-btn" class="btn-secondary retry hidden">Try again</button>
+      <p id="usage-note" class="muted hidden"></p>
 
       <button id="disconnect-btn" class="link-muted disconnect">Sign out</button>
     </section>
