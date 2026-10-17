@@ -24,6 +24,20 @@ export async function getUserEmail(): Promise<string | null> {
   return user?.primaryEmailAddress?.emailAddress ?? null;
 }
 
+/** Email for an account by id, for callers without a website session (the
+ * iPhone app signs requests with a connection code instead). */
+export async function getEmailForUserId(userId: string): Promise<string | null> {
+  if (!clerkEnabled) return null;
+  try {
+    const { clerkClient } = await import("@clerk/nextjs/server");
+    const client = await clerkClient();
+    const user = await client.users.getUser(userId);
+    return user.primaryEmailAddress?.emailAddress ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Sanitize a post-auth return path. Only same-origin relative routes are
  * allowed, so a crafted `?redirect_url=https://evil.example` can never turn a

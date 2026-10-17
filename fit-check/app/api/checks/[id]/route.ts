@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getUserId } from "@/lib/auth";
+import { getRequestUserId } from "@/lib/extensionAuth";
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const userId = await getUserId();
+  const userId = await getRequestUserId(req);
   if (!userId) {
     return NextResponse.json({ error: "Sign in first." }, { status: 401 });
   }
@@ -32,7 +32,7 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const userId = await getUserId();
+  const userId = await getRequestUserId(req);
   if (!userId) {
     return NextResponse.json({ error: "Sign in first." }, { status: 401 });
   }

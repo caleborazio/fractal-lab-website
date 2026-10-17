@@ -1,19 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getUserId } from "@/lib/auth";
+import { getEmailForUserId } from "@/lib/auth";
+import { getRequestUserId, isAppRequest } from "@/lib/extensionAuth";
 import { checkUsage } from "@/lib/usage";
 
-export async function GET() {
-  const userId = await getUserId();
+export async function GET(req: NextRequest) {
+  const userId = await getRequestUserId(req);
   if (!userId) return NextResponse.json({ profile: null, usage: null }, { status: 401 });
 
   const profile = await prisma.profile.findUnique({ where: { id: userId } });
   const usage = await checkUsage(userId);
-  return NextResponse.json({ profile, usage });
+  // The app's Account tab has no Clerk session to read these from.
+  const account = isAppRequest(req)
+    ? { email: await getEmailForUserId(userId), plan: profile?.plan ?? "free" }
+    : undefined;
+  return NextResponse.json({ profile, usage, account });
 }
 
 export async function POST(req: NextRequest) {
-  const userId = await getUserId();
+  const userId = await getRequestUserId(req);
   if (!userId) {
     return NextResponse.json({ error: "Sign in first." }, { status: 401 });
   }

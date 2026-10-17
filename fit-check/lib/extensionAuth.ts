@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "crypto";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getUserId } from "@/lib/auth";
 
 const LAST_USED_RESOLUTION_MS = 60 * 60 * 1000;
 
@@ -54,4 +55,21 @@ export async function revokeConnectionFromRequest(req: NextRequest): Promise<boo
   if (!code) return false;
   const result = await prisma.connectionToken.deleteMany({ where: { tokenHash: hashConnectionCode(code) } });
   return result.count > 0;
+}
+
+/**
+ * For routes the website and the iPhone app share (measurements, history):
+ * a connection code in the Authorization header if one was sent, otherwise
+ * the website's signed-in session. A header that's present but wrong never
+ * falls back to the cookie.
+ */
+export async function getRequestUserId(req: NextRequest): Promise<string | null> {
+  if (req.headers.get("authorization")?.startsWith("Bearer ")) {
+    return getProfileIdFromExtensionToken(req);
+  }
+  return getUserId();
+}
+
+export function isAppRequest(req: NextRequest): boolean {
+  return !!req.headers.get("authorization")?.startsWith("Bearer ");
 }

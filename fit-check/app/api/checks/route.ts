@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserId } from "@/lib/auth";
+import { getRequestUserId } from "@/lib/extensionAuth";
 
-export async function GET() {
-  const userId = await getUserId();
+export async function GET(req: NextRequest) {
+  const userId = await getRequestUserId(req);
   if (!userId) return NextResponse.json({ checks: [] });
 
   const checks = await prisma.fitCheck.findMany({
