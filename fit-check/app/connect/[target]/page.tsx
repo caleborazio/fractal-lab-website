@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { Mark, Wordmark } from "@/components/Brand";
 import { getUserEmail, getUserId } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ConnectHandoff, type ConnectTarget } from "@/components/ConnectHandoff";
@@ -23,7 +25,10 @@ export default async function ConnectPage({ params }: { params: Promise<{ target
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col px-5 py-8">
       <header className="mb-10">
-        <span className="font-mono text-xs uppercase tracking-wider text-pine">Mind the Fit</span>
+        <Link href="/" aria-label="Mind the Fit home" className="flex items-center gap-2.5">
+          <Mark size={28} />
+          <Wordmark className="text-[22px]" />
+        </Link>
       </header>
       <ConnectHandoff target={target as ConnectTarget} email={email} hasProfile={!!profile} />
     </main>

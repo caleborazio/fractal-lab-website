@@ -84,7 +84,7 @@ export function ConnectionsManager() {
   }
 
   return (
-    <div className="rounded-lg border border-line bg-panel px-5 py-4">
+    <div className="border border-line bg-bg px-5 py-4">
       <p className="mb-1 text-sm font-medium">iPhone app &amp; browser extension</p>
       <p className="mb-4 max-w-prose text-sm text-ink-soft">
         They connect themselves when you sign in from them. Each one shows up here, and

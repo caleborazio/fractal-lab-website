@@ -3,9 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BodyProfile,
-  DimensionVerdict,
   MeasurementConvention,
-  READING_LABEL,
   computeVerdict,
   estimateGarmentLanding,
   isPantsLike,
@@ -15,6 +13,7 @@ import type { ExtractionResult } from "@/lib/gemini";
 import { FREE_CHECKS_PER_MONTH } from "@/lib/plan";
 import { MeasurementGuide } from "@/components/MeasurementGuide";
 import { Lightbox } from "@/components/Lightbox";
+import { FitTag, LandingNote } from "@/components/FitTag";
 
 type Step = "loading" | "profile" | "submit" | "extracting" | "result";
 
@@ -61,18 +60,6 @@ function downscale(dataUrl: string, maxDim = 240, quality = 0.6): Promise<string
     img.src = dataUrl;
   });
 }
-
-function readingTone(reading: DimensionVerdict["reading"]) {
-  if (reading === "fitted" || reading === "comfortable") return "good";
-  if (reading === "no_data") return "neutral";
-  return "warn";
-}
-
-const CONVENTION_LABEL: Record<MeasurementConvention, string> = {
-  circumference: "stated as full circumference",
-  flat_half: "flat/half — doubled for comparison",
-  unknown: "convention unclear",
-};
 
 export function FitCheckApp() {
   const [step, setStep] = useState<Step>("loading");
@@ -297,7 +284,7 @@ export function FitCheckApp() {
 
       {step === "profile" && (
         <section>
-          <h1 className="mb-2 text-3xl font-semibold">Quick one-time setup</h1>
+          <h1 className="mb-2 text-4xl">Quick one-time setup</h1>
           <p className="mb-4 max-w-prose text-ink-soft">
             Four numbers, just for you — never shared. This is what every fit-check
             gets compared against.
@@ -336,14 +323,14 @@ export function FitCheckApp() {
                 }
               />
               <span className="text-xs text-ink-faint">
-                Stand straight, no shoes — the usual way you&apos;d check your height against a wall.
+                Stand straight, no shoes — the usual way you’d check your height against a wall.
               </span>
             </label>
           </div>
           {error && <p className="mt-3 text-sm text-bad">{error}</p>}
           <button
             onClick={saveProfile}
-            className="mt-6 rounded bg-accent px-5 py-3 font-medium text-bg hover:bg-accent-strong"
+            className="mt-6 bg-accent px-6 py-3.5 font-mono text-sm font-semibold uppercase tracking-wider text-bg hover:bg-accent-strong"
           >
             Save & continue
           </button>
@@ -352,10 +339,10 @@ export function FitCheckApp() {
 
       {step === "submit" && (
         <section>
-          <h1 className="mb-2 text-3xl font-semibold">Got a listing you&apos;re unsure about?</h1>
+          <h1 className="mb-3 text-4xl">Got a listing you’re unsure about?</h1>
           <p className="mb-2 max-w-prose text-ink-soft">
             Paste a link from Poshmark or Vinted and it reads the listing directly. For anywhere
-            else, upload a photo of the tag, the seller&apos;s measurements, or a flat-lay instead —
+            else, upload a photo of the tag, the seller’s measurements, or a flat-lay instead —
             works just as well.
           </p>
 
@@ -390,7 +377,7 @@ export function FitCheckApp() {
 
           <div
             onClick={() => fileInputRef.current?.click()}
-            className="mb-4 cursor-pointer rounded-lg border-2 border-dashed border-line-strong bg-panel p-8 text-center hover:border-accent"
+            className="mb-4 cursor-pointer paper-grid border border-dashed border-ink/50 p-8 text-center hover:border-ink"
           >
             <input
               ref={fileInputRef}
@@ -422,7 +409,7 @@ export function FitCheckApp() {
 
           <button
             onClick={checkFit}
-            className="rounded bg-accent px-5 py-3 font-medium text-bg hover:bg-accent-strong"
+            className="bg-accent px-6 py-3.5 font-mono text-sm font-semibold uppercase tracking-wider text-bg hover:bg-accent-strong"
           >
             {error ? "Recheck the fit" : "Check the fit"}
           </button>
@@ -437,26 +424,13 @@ export function FitCheckApp() {
 
       {step === "result" && extraction && verdict && overall && (
         <section>
-          <h1 className="mb-3 text-2xl font-semibold">Here&apos;s the read</h1>
+          <h1 className="mb-4 text-4xl">Here’s the read</h1>
 
           {warning && (
             <p className="mb-4 rounded border border-warn bg-warn-bg px-4 py-3 text-sm text-warn">
               {warning}
             </p>
           )}
-
-          <div
-            className={
-              "mb-4 rounded border px-4 py-3 text-base font-medium " +
-              (overall.tone === "good"
-                ? "border-good bg-good-bg text-good"
-                : overall.tone === "warn"
-                ? "border-warn bg-warn-bg text-warn"
-                : "border-line bg-bg-alt text-ink-soft")
-            }
-          >
-            {overall.headline}
-          </div>
 
           {extraction.summary && (
             <p className="mb-4 rounded border border-line bg-panel px-4 py-3 text-sm text-ink-soft">
@@ -503,89 +477,46 @@ export function FitCheckApp() {
             </div>
           )}
 
-          <div className="mb-6 flex flex-col gap-3">
-            {verdict.map((v) => {
-              const tone = readingTone(v.reading);
-              return (
-                <div
-                  key={v.dimension}
-                  className="flex items-center justify-between gap-3 rounded border border-line bg-panel px-4 py-3"
-                >
-                  <div>
-                    <span className="font-mono text-sm uppercase tracking-wide text-ink-faint">
-                      {v.dimension}
-                    </span>
-                    {v.raw != null && v.convention && (
-                      <p className="text-xs text-ink-faint">
-                        stated {v.raw}&quot; — {CONVENTION_LABEL[v.convention]}
-                        {v.convention === "flat_half" && ` (→ ${v.garment}")`}
-                      </p>
-                    )}
-                  </div>
-                  <span
-                    className={
-                      "whitespace-nowrap rounded-full px-3 py-1 font-mono text-xs " +
-                      (tone === "good"
-                        ? "bg-good-bg text-good"
-                        : tone === "warn"
-                        ? "bg-warn-bg text-warn"
-                        : "bg-bg-alt text-ink-faint")
-                    }
-                  >
-                    {READING_LABEL[v.reading]}
-                    {v.ease != null && ` (${v.ease > 0 ? "+" : ""}${v.ease.toFixed(1)}")`}
-                  </span>
+          <div className="mb-6 flex flex-col gap-4">
+            <FitTag
+              title={[extraction.brand, extraction.garmentType].filter(Boolean).join(" · ")}
+              verdict={verdict}
+              overall={overall}
+            >
+              {isPants && extraction.rise != null && (
+                <p className="mt-4 text-sm text-ink-soft">
+                  <span className="font-mono text-xs font-semibold uppercase tracking-wide text-ink">Rise</span>{" "}
+                  {extraction.rise}″
+                </p>
+              )}
+            </FitTag>
+
+            {landing ? (
+              <LandingNote landing={landing} />
+            ) : (
+              (isPants ? extraction.inseam != null : extraction.length != null) && (
+                <div className="paper-grid border border-line px-5 py-4">
+                  <p className="font-mono text-xs uppercase tracking-wide text-ink-faint">Where it lands</p>
+                  <p className="mt-1 text-sm text-ink-soft">
+                    {isPants ? "Inseam" : "Length"}: {isPants ? extraction.inseam : extraction.length}″. Add your
+                    height in Settings for a guess at where that hits you
+                    {isPants ? " (or your inseam, for an exact comparison)" : ""}.
+                  </p>
                 </div>
-              );
-            })}
-            {isPants && extraction.rise != null && (
-              <p className="mt-2 text-sm text-ink-soft">
-                Rise: <strong className="text-ink">{extraction.rise}&quot;</strong>
+              )
+            )}
+            {landing?.precision === "estimated" && (
+              <p className="text-xs text-ink-faint">
+                {isPants
+                  ? "Add your inseam in Settings for an exact comparison instead of an estimate from height."
+                  : "Add your inseam (and optionally shoulder-to-inseam) in Settings for a sharper read than the height-based estimate."}
               </p>
             )}
           </div>
 
-          {(isPants ? extraction.inseam != null : extraction.length != null) && (
-            <div className="mb-6 rounded border border-line bg-panel px-4 py-4">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="font-mono text-xs uppercase tracking-wide text-ink-faint">
-                  where this will hit you
-                </span>
-                {landing && (
-                  <span className={"text-xs " + (landing.precision === "measured" ? "text-good" : "text-ink-faint")}>
-                    {landing.precision === "measured" ? "from your measurements" : "rough estimate"}
-                  </span>
-                )}
-              </div>
-              <p className="text-sm text-ink-soft">
-                {isPants ? "Inseam" : "Length"}:{" "}
-                <strong className="text-ink">{isPants ? extraction.inseam : extraction.length}&quot;</strong>
-              </p>
-              {landing ? (
-                <>
-                  <p className="mt-1 text-base font-medium text-ink">{landing.label}</p>
-                  <p className="text-sm text-ink-soft">{landing.detail}</p>
-                </>
-              ) : (
-                <p className="mt-1 text-sm text-ink-faint">
-                  Worth comparing to where you&apos;d want it to hit. Add your height in Settings for a
-                  rough guess at exactly that
-                  {isPants ? " (or your inseam, for an exact comparison instead)" : ""}.
-                </p>
-              )}
-              {landing?.precision === "estimated" && (
-                <p className="mt-2 text-xs text-ink-faint">
-                  {isPants
-                    ? "Add your inseam in Settings for an exact comparison instead of an estimate from height."
-                    : "Add your inseam (and optionally shoulder-to-inseam) in Settings for a sharper read than the height-based estimate."}
-                </p>
-              )}
-            </div>
-          )}
-
           <details className="mb-6 rounded border border-line bg-panel">
             <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-ink-soft hover:text-ink">
-              Doesn&apos;t look right? Edit what was found
+              Doesn’t look right? Edit what was found
             </summary>
             <div className="flex flex-col gap-4 border-t border-line px-4 py-4">
               <div className="flex gap-3">
@@ -691,7 +622,7 @@ export function FitCheckApp() {
 
           <div className="rounded border border-line bg-panel px-4 py-4">
             {feedbackSent ? (
-              <p className="text-sm text-pine">Thanks — that helps tune future reads.</p>
+              <p className="text-sm text-good">Thanks — that helps tune future reads.</p>
             ) : checkId ? (
               <>
                 <p className="mb-3 text-sm text-ink-soft">
@@ -716,8 +647,8 @@ export function FitCheckApp() {
               </>
             ) : (
               <p className="text-sm text-ink-faint">
-                This read didn&apos;t save to your history (connection hiccup) — the result above is
-                still accurate, just won&apos;t show up later.
+                This read didn’t save to your history (connection hiccup) — the result above is
+                still accurate, just won’t show up later.
               </p>
             )}
             {error && <p className="mt-3 text-sm text-bad">{error}</p>}
@@ -725,7 +656,7 @@ export function FitCheckApp() {
 
           <button
             onClick={checkAnother}
-            className="mt-6 rounded bg-accent px-5 py-3 font-medium text-bg hover:bg-accent-strong"
+            className="mt-6 bg-accent px-6 py-3.5 font-mono text-sm font-semibold uppercase tracking-wider text-bg hover:bg-accent-strong"
           >
             Check another listing
           </button>

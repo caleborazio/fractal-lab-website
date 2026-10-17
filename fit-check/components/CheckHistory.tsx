@@ -1,9 +1,31 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { summarizeVerdict, READING_LABEL, type DimensionVerdict, type LandingEstimate } from "@/lib/fit";
+import { summarizeVerdict, isPantsLike, type DimensionVerdict, type LandingEstimate } from "@/lib/fit";
 import type { ExtractionResult } from "@/lib/gemini";
 import { Lightbox } from "@/components/Lightbox";
+import { FitTag, LandingNote } from "@/components/FitTag";
+
+const SITE_NAMES: [RegExp, string][] = [
+  [/poshmark|posh\.mk/, "Poshmark"],
+  [/depop/, "Depop"],
+  [/thredup/, "ThredUp"],
+  [/vinted/, "Vinted"],
+  [/ebay/, "eBay"],
+  [/therealreal/, "The RealReal"],
+  [/etsy/, "Etsy"],
+  [/grailed/, "Grailed"],
+];
+
+function siteName(url: string | null): string | null {
+  if (!url) return null;
+  try {
+    const host = new URL(url).hostname.replace(/^www\./, "");
+    return SITE_NAMES.find(([pattern]) => pattern.test(host))?.[1] ?? host;
+  } catch {
+    return null;
+  }
+}
 
 interface SavedCheck {
   id: string;
@@ -17,6 +39,7 @@ interface SavedCheck {
   rise: number | null;
   inseam: number | null;
   rawExtraction: ExtractionResult | null;
+  sourceUrl: string | null;
 }
 
 export function CheckHistory() {
@@ -73,37 +96,44 @@ export function CheckHistory() {
 
   if (checks.length === 0) {
     return (
-      <p className="rounded-lg border border-line bg-panel px-4 py-6 text-center text-sm text-ink-soft">
-        No checks yet — once you check a listing, it&apos;ll show up here so you can come back to
+      <p className="paper-grid border border-line px-4 py-8 text-center text-ink-soft">
+        No checks yet — once you check a listing, it’ll show up here so you can come back to
         it later.
       </p>
     );
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col">
       {checks.map((check) => {
         const overall = check.verdict && check.verdict.length > 0 ? summarizeVerdict(check.verdict) : null;
         const isOpen = expandedId === check.id;
         const thumb = check.images?.[0];
+        const label = [check.brand, siteName(check.sourceUrl)].filter(Boolean).join(" · ");
+        const toneText =
+          overall?.tone === "good" ? "text-good" : overall?.tone === "warn" ? "text-warn" : "text-ink-faint";
 
         return (
-          <div key={check.id} className="rounded-lg border border-line bg-panel">
+          <div key={check.id} className="border-t border-line last:border-b">
             <button
               onClick={() => setExpandedId(isOpen ? null : check.id)}
-              className="flex w-full items-center gap-3 px-4 py-3 text-left"
+              aria-expanded={isOpen}
+              className="flex w-full items-start gap-4 py-4 text-left"
             >
               {thumb ? (
-                <img src={thumb} alt="" className="h-12 w-12 shrink-0 rounded object-cover" />
+                <img src={thumb} alt="" className="h-24 w-[76px] shrink-0 object-cover" />
               ) : (
-                <div className="h-12 w-12 shrink-0 rounded bg-bg-alt" />
+                <div className="paper-grid h-24 w-[76px] shrink-0" />
               )}
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">
-                  {check.brand ? `${check.brand} — ` : ""}
-                  {check.garmentType}
-                </p>
-                <p className="text-xs text-ink-faint">
+                {label && (
+                  <p className="truncate font-mono text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+                    {label}
+                  </p>
+                )}
+                <p className="truncate text-lg capitalize">{check.garmentType}</p>
+                {overall && <p className={`italic ${toneText}`}>{overall.headline.replace(/\.$/, "")}</p>}
+                <p className="text-sm text-ink-faint">
                   {new Date(check.createdAt).toLocaleDateString(undefined, {
                     month: "short",
                     day: "numeric",
@@ -112,79 +142,52 @@ export function CheckHistory() {
                   {check.actualFit && ` · you said: ${check.actualFit}`}
                 </p>
               </div>
-              {overall && (
-                <span
-                  className={
-                    "shrink-0 whitespace-nowrap rounded-full px-3 py-1 font-mono text-xs " +
-                    (overall.tone === "good"
-                      ? "bg-good-bg text-good"
-                      : overall.tone === "warn"
-                      ? "bg-warn-bg text-warn"
-                      : "bg-bg-alt text-ink-faint")
-                  }
-                >
-                  {overall.tone === "good" ? "good fit" : overall.tone === "warn" ? "mixed" : "—"}
-                </span>
-              )}
             </button>
 
             {isOpen && (
-              <div className="border-t border-line px-4 py-4">
-                {overall && <p className="mb-3 text-sm font-medium text-ink">{overall.headline}</p>}
+              <div className="flex flex-col gap-4 pb-6">
+                {check.verdict && check.verdict.length > 0 && overall && (
+                  <FitTag
+                    title={[check.brand, check.garmentType].filter(Boolean).join(" · ")}
+                    verdict={check.verdict}
+                    overall={overall}
+                  >
+                    {check.rise != null && isPantsLike(check.garmentType) && (
+                      <p className="mt-4 text-sm text-ink-soft">
+                        <span className="font-mono text-xs font-semibold uppercase tracking-wide text-ink">Rise</span>{" "}
+                        {check.rise}″
+                      </p>
+                    )}
+                  </FitTag>
+                )}
+
+                {check.landing && <LandingNote landing={check.landing} />}
 
                 {check.rawExtraction?.summary && (
-                  <p className="mb-3 text-sm text-ink-soft">{check.rawExtraction.summary}</p>
+                  <p className="text-sm text-ink-soft">{check.rawExtraction.summary}</p>
                 )}
 
                 {check.rawExtraction?.measuredFromPhoto && (
-                  <p className="mb-3 text-sm text-warn">
+                  <p className="text-sm text-warn">
                     ★ Filled in from a photo, not the listing text — worth a glance yourself.
                   </p>
                 )}
 
-                {check.verdict && check.verdict.length > 0 && (
-                  <div className="mb-3 flex flex-col gap-1.5">
-                    {check.verdict.map((v) => (
-                      <div key={v.dimension} className="flex items-center justify-between text-sm">
-                        <span className="font-mono text-xs uppercase tracking-wide text-ink-faint">
-                          {v.dimension}
-                        </span>
-                        <span className="text-ink-soft">{READING_LABEL[v.reading]}</span>
-                      </div>
-                    ))}
-                    {check.rise != null && (
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="font-mono text-xs uppercase tracking-wide text-ink-faint">
-                          rise
-                        </span>
-                        <span className="text-ink-soft">{check.rise}&quot;</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {check.landing && (
-                  <div className="mb-3 rounded border border-line bg-bg px-3 py-2.5">
-                    <p className="text-sm font-medium text-ink">{check.landing.label}</p>
-                    <p className="text-xs text-ink-soft">{check.landing.detail}</p>
-                  </div>
-                )}
-
                 {check.images && check.images.length > 0 && (
-                  <div className="mb-3 flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-2">
                     {check.images.map((src, i) => (
                       <img
                         key={i}
                         src={src}
                         alt={`check photo ${i + 1}`}
                         onClick={() => setLightboxSrc(src)}
-                        className="h-16 w-16 cursor-zoom-in rounded object-cover"
+                        className="h-20 w-16 cursor-zoom-in object-cover"
                       />
                     ))}
                   </div>
                 )}
 
-                <div className="mb-3 border-t border-line pt-3">
+                <div className="border-t border-line pt-4">
                   {check.actualFit ? (
                     <p className="text-sm text-ink-faint">
                       You said: <span className="text-ink-soft">{check.actualFit}</span>
@@ -198,7 +201,7 @@ export function CheckHistory() {
                             key={opt}
                             disabled={submittingId === check.id}
                             onClick={() => sendFeedback(check.id, opt)}
-                            className="rounded border border-line-strong px-3 py-1.5 text-sm hover:border-accent hover:text-accent disabled:opacity-50"
+                            className="border border-line-strong px-3 py-1.5 text-sm hover:border-ink disabled:opacity-50"
                           >
                             {opt}
                           </button>
@@ -208,7 +211,7 @@ export function CheckHistory() {
                   )}
                 </div>
 
-                <div className="flex justify-end border-t border-line pt-3">
+                <div className="flex justify-end">
                   {confirmDeleteId === check.id ? (
                     <button
                       disabled={submittingId === check.id}

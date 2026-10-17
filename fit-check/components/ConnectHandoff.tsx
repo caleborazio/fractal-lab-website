@@ -108,7 +108,7 @@ export function ConnectHandoff({
   if (phase === "measurements") {
     return (
       <div>
-        <h1 className="mb-2 text-2xl font-semibold">First, your measurements</h1>
+        <h1 className="mb-3 text-4xl">First, your measurements</h1>
         <p className="mb-6 text-sm text-ink-soft">
           Every listing gets compared against these. It takes a minute, and you only do it once.
         </p>
@@ -120,14 +120,14 @@ export function ConnectHandoff({
   if (phase === "done") {
     return (
       <div>
-        <h1 className="mb-2 text-2xl font-semibold">Connected</h1>
+        <h1 className="mb-3 text-4xl">Connected</h1>
         {target === "app" ? (
           <>
             <p className="mb-6 text-sm text-ink-soft">Heading back to the app…</p>
             {returnUrl && (
               <a
                 href={returnUrl}
-                className="inline-block rounded bg-accent px-5 py-2.5 font-medium text-bg hover:bg-accent-strong"
+                className="inline-block bg-accent px-6 py-3.5 font-mono text-sm font-semibold uppercase tracking-wider text-bg hover:bg-accent-strong"
               >
                 Return to Mind the Fit
               </a>
@@ -145,7 +145,7 @@ export function ConnectHandoff({
 
   return (
     <div>
-      <h1 className="mb-2 text-2xl font-semibold">
+      <h1 className="mb-3 text-4xl">
         Connect {target === "app" ? "the iPhone app" : "this browser"}
       </h1>
       <p className="mb-6 text-sm text-ink-soft">
@@ -161,7 +161,7 @@ export function ConnectHandoff({
 
       {extensionFound === false ? (
         <p className="mb-4 text-sm text-bad">
-          The Mind the Fit extension isn&apos;t answering on this page. Make sure it&apos;s installed
+          The Mind the Fit extension isn’t answering on this page. Make sure it’s installed
           and turned on, then reload.
         </p>
       ) : null}
@@ -170,7 +170,7 @@ export function ConnectHandoff({
       <button
         onClick={connect}
         disabled={phase === "working" || !extensionFound}
-        className="w-full rounded bg-accent px-5 py-3 font-medium text-bg hover:bg-accent-strong disabled:opacity-50"
+        className="w-full bg-accent px-6 py-4 font-mono text-sm font-semibold uppercase tracking-wider text-bg hover:bg-accent-strong disabled:opacity-50"
       >
         {phase === "working" ? "Connecting…" : "Connect"}
       </button>

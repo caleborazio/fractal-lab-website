@@ -167,11 +167,11 @@ export function MeasurementsForm({
       <div className="mt-4 flex items-center gap-3">
         <button
           onClick={save}
-          className="rounded bg-accent px-5 py-2.5 font-medium text-bg hover:bg-accent-strong"
+          className="bg-accent px-6 py-3.5 font-mono text-sm font-semibold uppercase tracking-wider text-bg hover:bg-accent-strong"
         >
           {saveLabel}
         </button>
-        {saved && profile && !onSaved && <span className="text-sm text-pine">Saved</span>}
+        {saved && profile && !onSaved && <span className="text-sm text-good">Saved</span>}
       </div>
     </div>
   );

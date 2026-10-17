@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { SignIn } from "@clerk/nextjs";
+import { Mark, Wordmark } from "@/components/Brand";
 import { clerkEnabled, safeReturnPath } from "@/lib/auth";
 
 export default async function SignInPage({
@@ -15,7 +17,10 @@ export default async function SignInPage({
   return (
     <main className="mx-auto flex min-h-screen max-w-xl flex-col px-5 py-8">
       <header className="mb-8">
-        <span className="font-mono text-xs uppercase tracking-wider text-pine">Mind the Fit</span>
+        <Link href="/" aria-label="Mind the Fit home" className="flex items-center gap-2.5">
+          <Mark size={28} />
+          <Wordmark className="text-[22px]" />
+        </Link>
       </header>
       <div className="flex flex-1 items-center justify-center">
         {clerkEnabled ? (
@@ -24,8 +29,10 @@ export default async function SignInPage({
             signUpUrl={`/sign-up?redirect_url=${encodeURIComponent(back)}`}
             appearance={{
               variables: {
-                colorPrimary: "#8a6112",
-                borderRadius: "0.5rem",
+                colorPrimary: "#1c1b19",
+                colorBackground: "#fbf8f2",
+                fontFamily: "'EB Garamond', Georgia, serif",
+                borderRadius: "0.125rem",
               },
             }}
           />

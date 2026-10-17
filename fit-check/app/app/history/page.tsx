@@ -10,7 +10,7 @@ export default async function HistoryPage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-xl flex-col px-5 py-8">
       <AppHeader />
-      <h1 className="mb-4 text-2xl font-semibold">Your checks</h1>
+      <h1 className="mb-6 text-4xl">Your checks</h1>
       <CheckHistory />
     </main>
   );

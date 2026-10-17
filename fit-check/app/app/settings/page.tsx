@@ -22,9 +22,9 @@ export default async function SettingsPage() {
     <main className="mx-auto flex min-h-screen max-w-xl flex-col px-5 py-8">
       <AppHeader />
 
-      <h1 className="mb-6 text-2xl font-semibold">Settings</h1>
+      <h1 className="mb-8 text-4xl">Settings</h1>
 
-      <section className="mb-8 flex items-center justify-between rounded-lg border border-line bg-panel px-5 py-4">
+      <section className="mb-8 flex items-center justify-between border border-line bg-bg px-5 py-4">
         <div>
           {email && <p className="text-sm text-ink">{email}</p>}
           <p className="text-xs text-ink-faint">
@@ -36,13 +36,13 @@ export default async function SettingsPage() {
         <AccountActions plan={plan} />
       </section>
 
-      <h2 className="mb-3 text-lg font-semibold">Your measurements</h2>
+      <h2 className="mb-3 text-2xl">Your measurements</h2>
       <p className="mb-4 max-w-prose text-sm text-ink-soft">
         Private, never shared — this is what every fit-check gets compared against.
       </p>
       <MeasurementsForm />
 
-      <h2 className="mb-3 mt-10 text-lg font-semibold">Connections</h2>
+      <h2 className="mb-3 mt-12 text-2xl">Connections</h2>
       <ConnectionsManager />
 
       <Link

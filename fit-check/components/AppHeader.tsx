@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
 import { clerkEnabled } from "@/lib/auth";
+import { Mark, Wordmark } from "@/components/Brand";
 
 // Clerk's default avatar (shown until a user uploads their own photo) is an
 // auto-generated marble/swirl graphic with no supported way to recolor it --
@@ -17,27 +18,28 @@ const AVATAR_GLYPH = encodeURIComponent(
 // is imported from a "use client" file under Next 16.
 export function AppHeader() {
   return (
-    <header className="mb-8 flex items-center justify-between">
-      <Link href="/app" className="font-mono text-xs uppercase tracking-wider text-pine">
-        Mind the Fit
+    <header className="mb-10 flex items-center justify-between gap-4 border-b border-line pb-4">
+      <Link href="/app" aria-label="Mind the Fit — new check" className="flex items-center gap-2.5">
+        <Mark size={28} />
+        <Wordmark className="text-[22px] max-[400px]:hidden" />
       </Link>
       <div className="flex items-center gap-4">
         <Link
           href="/app"
-          className="font-mono text-xs uppercase tracking-wider text-ink-faint hover:text-accent"
+          className="font-mono text-xs font-semibold uppercase tracking-wide text-ink-soft hover:text-ink"
         >
           New Fit
         </Link>
         <Link
           href="/app/history"
-          className="font-mono text-xs uppercase tracking-wider text-ink-faint hover:text-accent"
+          className="font-mono text-xs font-semibold uppercase tracking-wide text-ink-soft hover:text-ink"
         >
           History
         </Link>
         <Link
           href="/app/settings"
           aria-label="Settings"
-          className="text-ink-faint hover:text-accent"
+          className="text-ink-soft hover:text-ink"
         >
           <svg
             width="18"
@@ -45,7 +47,7 @@ export function AppHeader() {
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            strokeWidth="2"
+            strokeWidth="1.5"
             strokeLinecap="round"
             strokeLinejoin="round"
           >
@@ -56,13 +58,13 @@ export function AppHeader() {
         {clerkEnabled && (
           <UserButton
             appearance={{
-              variables: { colorPrimary: "#8a6112" },
+              variables: { colorPrimary: "#1c1b19" },
               elements: {
                 avatarBox: { width: "28px", height: "28px" },
                 userButtonAvatarBox: {
                   width: "28px",
                   height: "28px",
-                  backgroundColor: "#8a6112",
+                  backgroundColor: "#1c1b19",
                   backgroundImage: `url("data:image/svg+xml,${AVATAR_GLYPH}")`,
                   backgroundSize: "16px 16px",
                   backgroundPosition: "center",
