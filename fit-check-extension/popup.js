@@ -1,6 +1,12 @@
 const API_BASE = "https://www.mindthefit.com";
 const TOKEN_KEY = "mtf_token";
 
+// One copy of this code runs in Chrome and in Safari (iPhone and Mac), where
+// the extension ships inside the Mind the Fit app. Safari's `browser`
+// namespace is the promise-based one.
+const ext = globalThis.browser ?? globalThis.chrome;
+const IN_SAFARI = navigator.vendor === "Apple Computer, Inc.";
+
 let token = null;
 let currentTab = null;
 let retryAction = null;
@@ -35,7 +41,7 @@ function showView(name) {
 
 document.getElementById("open-app").addEventListener("click", (e) => {
   e.preventDefault();
-  chrome.tabs.create({ url: `${API_BASE}/app` });
+  ext.tabs.create({ url: `${API_BASE}/app` });
 });
 
 // --- Connect flow -----------------------------------------------------
@@ -48,15 +54,17 @@ const connectError = document.getElementById("connect-error");
 // saves it -- this popup closes when the tab opens, so the next click on the
 // toolbar icon finds the extension connected.
 document.getElementById("signin-btn").addEventListener("click", () => {
-  chrome.tabs.create({ url: `${API_BASE}/connect/extension` });
+  ext.tabs.create({ url: `${API_BASE}/connect/extension` });
   window.close();
 });
 
 // Signing in (here or on the connect page) and signing out both go through
 // storage, so this one listener keeps the popup in step.
-chrome.storage.onChanged.addListener((changes, area) => {
+ext.storage.onChanged.addListener((changes, area) => {
   if (area !== "local" || !changes[TOKEN_KEY]) return;
-  token = changes[TOKEN_KEY].newValue || null;
+  const newToken = changes[TOKEN_KEY].newValue || null;
+  if (newToken === token) return;
+  token = newToken;
   if (token) {
     showView("main");
     checkCurrentPage();
@@ -73,7 +81,7 @@ connectBtn.addEventListener("click", async () => {
     connectError.classList.remove("hidden");
     return;
   }
-  await chrome.storage.local.set({ [TOKEN_KEY]: code });
+  await ext.storage.local.set({ [TOKEN_KEY]: code });
 });
 
 document.getElementById("disconnect-btn").addEventListener("click", async () => {
@@ -85,7 +93,8 @@ document.getElementById("disconnect-btn").addEventListener("click", async () => 
     }).catch(() => {});
   }
   tokenInput.value = "";
-  await chrome.storage.local.remove(TOKEN_KEY);
+  if (IN_SAFARI) await tellApp({ type: "signOut" });
+  await ext.storage.local.remove(TOKEN_KEY);
 });
 
 // --- Check-the-fit flow -------------------------------------------------
@@ -263,7 +272,7 @@ function renderResult(data, { checkedAt } = {}) {
   `;
   document.getElementById("view-history-link").addEventListener("click", (e) => {
     e.preventDefault();
-    chrome.tabs.create({ url: `${API_BASE}/app/history` });
+    ext.tabs.create({ url: `${API_BASE}/app/history` });
   });
   document.getElementById("check-again-link")?.addEventListener("click", (e) => {
     e.preventDefault();
@@ -421,7 +430,8 @@ async function api(path, body) {
   const data = await res.json().catch(() => ({}));
   if (res.status === 401) {
     // Signed out or disconnected elsewhere -- send them back through sign-in.
-    await chrome.storage.local.remove(TOKEN_KEY);
+    if (IN_SAFARI) await tellApp({ type: "signOut" });
+    await ext.storage.local.remove(TOKEN_KEY);
     showView("connect");
     throw new SignedOut();
   }
@@ -446,7 +456,7 @@ const pendingKey = (url) => `pending:${url.split(/[?#]/)[0].replace(/\/+$/, "").
 
 async function readPage(func) {
   try {
-    const [{ result }] = await chrome.scripting.executeScript({ target: { tabId: currentTab.id }, func });
+    const [{ result }] = await ext.scripting.executeScript({ target: { tabId: currentTab.id }, func });
     return result;
   } catch {
     throw new Error("Chrome doesn't let extensions read this page. Open a listing and try again.");
@@ -471,7 +481,7 @@ async function checkCurrentPage() {
     }
 
     const key = pendingKey(currentTab.url);
-    const { [key]: startedAt } = await chrome.storage.session.get(key);
+    const { [key]: startedAt } = await ext.storage.session.get(key);
     if (startedAt && Date.now() - startedAt < PENDING_MAX_MS) {
       await waitForUnfinishedCheck(startedAt);
       return;
@@ -496,18 +506,18 @@ async function waitForUnfinishedCheck(startedAt) {
     if (earlier.found) {
       setStatus(null);
       renderResult(earlier);
-      await chrome.storage.session.remove(pendingKey(currentTab.url));
+      await ext.storage.session.remove(pendingKey(currentTab.url));
       return;
     }
   }
-  await chrome.storage.session.remove(pendingKey(currentTab.url));
+  await ext.storage.session.remove(pendingKey(currentTab.url));
   throw new Error("That check didn't finish.");
 }
 
 async function runCheck() {
   resetMain();
   const key = pendingKey(currentTab.url);
-  await chrome.storage.session.set({ [key]: Date.now() });
+  await ext.storage.session.set({ [key]: Date.now() });
   try {
     setStatus("Reading the page…");
     const page = await readPage(extractPageData);
@@ -528,22 +538,45 @@ async function runCheck() {
   } catch (err) {
     showFailure(err, runCheck);
   } finally {
-    await chrome.storage.session.remove(key);
+    await ext.storage.session.remove(key);
   }
 }
 
 document.getElementById("check-anyway-btn").addEventListener("click", () => runCheck());
 retryBtn.addEventListener("click", () => retryAction?.());
 
+// --- Signing in through the app (Safari only) ------------------------------
+
+// The Mind the Fit app keeps its sign-in in a keychain group the Safari
+// extension also belongs to; its native handler reads it out for us, and
+// clears it on sign-out so the app and extension stay signed in or out together.
+async function tellApp(message) {
+  try {
+    return await ext.runtime.sendNativeMessage("FractalLab.MindTheFit", message);
+  } catch {
+    return null;
+  }
+}
+
+async function codeFromApp() {
+  const reply = await tellApp({ type: "connectionCode" });
+  const code = reply?.code;
+  return typeof code === "string" && code.startsWith("mtf_") ? code : null;
+}
+
 // --- Init -----------------------------------------------------------------
 
 (async function init() {
-  ({ [TOKEN_KEY]: token } = await chrome.storage.local.get(TOKEN_KEY));
+  ({ [TOKEN_KEY]: token } = await ext.storage.local.get(TOKEN_KEY));
+  if (!token && IN_SAFARI) {
+    token = await codeFromApp();
+    if (token) await ext.storage.local.set({ [TOKEN_KEY]: token });
+  }
   if (!token) {
     showView("connect");
     return;
   }
   showView("main");
-  [currentTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  [currentTab] = await ext.tabs.query({ active: true, currentWindow: true });
   checkCurrentPage();
 })();

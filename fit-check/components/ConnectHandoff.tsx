@@ -17,7 +17,11 @@ const EXTENSION_WAIT_MS = 2000;
 type Phase = "measurements" | "ready" | "working" | "done" | "error";
 
 function extensionLabel(): string {
-  if (/Edg\//.test(navigator.userAgent)) return "Edge extension";
+  const ua = navigator.userAgent;
+  if (/Edg\//.test(ua)) return "Edge extension";
+  if (/Safari\//.test(ua) && !/Chrome|Chromium|CriOS|FxiOS/.test(ua)) {
+    return /iPhone|iPad/.test(ua) ? "Safari on iPhone" : "Safari extension";
+  }
   return "Chrome extension";
 }
 

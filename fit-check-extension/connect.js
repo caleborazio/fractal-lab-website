@@ -4,6 +4,7 @@
 const FROM_SITE = "mind-the-fit-site";
 const FROM_EXTENSION = "mind-the-fit-extension";
 const TOKEN_KEY = "mtf_token";
+const ext = globalThis.browser ?? globalThis.chrome;
 
 function reply(type) {
   window.postMessage({ source: FROM_EXTENSION, type }, location.origin);
@@ -17,7 +18,7 @@ window.addEventListener("message", async (event) => {
 
   if (data.type === "hello") reply("ready");
   if (data.type === "connect" && typeof data.code === "string" && data.code.startsWith("mtf_")) {
-    await chrome.storage.local.set({ [TOKEN_KEY]: data.code });
+    await ext.storage.local.set({ [TOKEN_KEY]: data.code });
     reply("connected");
   }
 });

@@ -26,6 +26,7 @@
 body {
   margin: 0;
   width: 340px;
+  min-height: 120px;
   padding: 16px 18px 18px;
   background: var(--bg);
   color: var(--ink);
@@ -462,4 +463,11 @@ input[type="text"]:focus {
 .not-listing.hidden,
 .btn-secondary.hidden {
   display: none;
+}
+
+/* Safari on iPhone shows the popup as a full-width sheet. */
+@supports (-webkit-touch-callout: none) {
+  body {
+    width: auto;
+  }
 }
