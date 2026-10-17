@@ -13,16 +13,21 @@ export function hashConnectionCode(code: string): string {
   return createHash("sha256").update(code).digest("hex");
 }
 
-/**
- * The browser extension, iPhone app and Shortcuts can't hold a Clerk session
- * cookie the way a page on mindthefit.com can, so they send a connection
- * code as a bearer token instead (created in Settings → Connections).
- */
-export async function getProfileIdFromExtensionToken(req: NextRequest): Promise<string | null> {
+function bearerCode(req: NextRequest): string | null {
   const authHeader = req.headers.get("authorization");
   if (!authHeader?.startsWith("Bearer ")) return null;
+  return authHeader.slice("Bearer ".length).trim() || null;
+}
 
-  const code = authHeader.slice("Bearer ".length).trim();
+/**
+ * The browser extension and iPhone app can't hold a Clerk session cookie the
+ * way a page on mindthefit.com can, so they send a connection code as a
+ * bearer token instead. They get one by signing in at /connect/[target],
+ * which hands the code straight to them; Settings → Connections can also
+ * create one to paste by hand.
+ */
+export async function getProfileIdFromExtensionToken(req: NextRequest): Promise<string | null> {
+  const code = bearerCode(req);
   if (!code) return null;
 
   const connection = await prisma.connectionToken.findUnique({
@@ -40,4 +45,13 @@ export async function getProfileIdFromExtensionToken(req: NextRequest): Promise<
       .catch(() => {});
   }
   return connection.profileId;
+}
+
+/** Deletes the connection whose code is on this request (signing out of the
+ * app or extension), so it doesn't linger in Settings → Connections. */
+export async function revokeConnectionFromRequest(req: NextRequest): Promise<boolean> {
+  const code = bearerCode(req);
+  if (!code) return false;
+  const result = await prisma.connectionToken.deleteMany({ where: { tokenHash: hashConnectionCode(code) } });
+  return result.count > 0;
 }

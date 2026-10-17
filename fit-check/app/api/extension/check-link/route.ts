@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
   const profileId = await getProfileIdFromExtensionToken(req);
   if (!profileId) {
     return reply(
-      "This isn't connected to your Mind the Fit account yet. In Mind the Fit → Settings → Connections, copy your connection code into this Shortcut.",
+      "Not signed in to Mind the Fit. Open the Mind the Fit app and sign in, then try again.",
       401
     );
   }

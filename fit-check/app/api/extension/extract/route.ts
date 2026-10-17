@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "This extension isn't connected. Generate a connection code from Settings on mindthefit.com and paste it into the extension.",
+          "Not signed in to Mind the Fit. Sign in again from the extension or app.",
       },
       { status: 401 }
     );

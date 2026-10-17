@@ -26,10 +26,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Sign in first." }, { status: 401 });
   }
 
+  // A connection belongs to a profile, which only exists once measurements
+  // are saved -- and a connection without measurements couldn't check anything.
+  const profile = await prisma.profile.findUnique({ where: { id: userId }, select: { id: true } });
+  if (!profile) {
+    return NextResponse.json({ error: "Add your measurements first." }, { status: 400 });
+  }
+
   const count = await prisma.connectionToken.count({ where: { profileId: userId } });
   if (count >= MAX_CONNECTIONS) {
     return NextResponse.json(
-      { error: `You can have up to ${MAX_CONNECTIONS} connections. Revoke one you no longer use first.` },
+      { error: `You can have up to ${MAX_CONNECTIONS} connections. Disconnect one you no longer use in Settings first.` },
       { status: 400 }
     );
   }

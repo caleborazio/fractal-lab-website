@@ -66,7 +66,7 @@ export function ConnectionsManager() {
       if (!res.ok) throw new Error();
       setConnections((prev) => (prev ? prev.filter((c) => c.id !== id) : prev));
     } catch {
-      setError("Couldn't revoke that connection. Try again.");
+      setError("Couldn't disconnect that. Try again.");
     } finally {
       setBusy(false);
       setConfirmRevokeId(null);
@@ -85,10 +85,10 @@ export function ConnectionsManager() {
 
   return (
     <div className="rounded-lg border border-line bg-panel px-5 py-4">
-      <p className="mb-1 text-sm font-medium">Browser extension, iPhone app &amp; Shortcuts</p>
+      <p className="mb-1 text-sm font-medium">iPhone app &amp; browser extension</p>
       <p className="mb-4 max-w-prose text-sm text-ink-soft">
-        Give each place you check fits from its own code. Revoking one doesn&apos;t affect the
-        others.
+        They connect themselves when you sign in from them. Each one shows up here, and
+        disconnecting one doesn&apos;t affect the others.
       </p>
 
       {created && (
@@ -135,14 +135,14 @@ export function ConnectionsManager() {
                   disabled={busy}
                   className="shrink-0 text-xs text-bad underline disabled:opacity-50"
                 >
-                  Click again to revoke
+                  Click again to disconnect
                 </button>
               ) : (
                 <button
                   onClick={() => setConfirmRevokeId(c.id)}
                   className="shrink-0 text-xs text-ink-faint underline hover:text-bad"
                 >
-                  Revoke
+                  Disconnect
                 </button>
               )}
             </li>
@@ -152,22 +152,27 @@ export function ConnectionsManager() {
 
       {error && <p className="mb-3 text-sm text-bad">{error}</p>}
 
-      <div className="flex gap-2">
-        <input
-          value={label}
-          onChange={(e) => setLabel(e.target.value)}
-          maxLength={40}
-          placeholder="Name, e.g. iPhone app"
-          className="min-w-0 flex-1 rounded border border-line bg-bg px-3 py-1.5 text-sm text-ink outline-none focus:border-accent"
-        />
-        <button
-          onClick={create}
-          disabled={busy}
-          className="shrink-0 rounded bg-accent px-3 py-1.5 text-xs font-medium text-bg hover:bg-accent-strong disabled:opacity-50"
-        >
-          Create code
-        </button>
-      </div>
+      <details>
+        <summary className="cursor-pointer text-xs text-ink-faint hover:text-ink">
+          Need a code to paste by hand instead?
+        </summary>
+        <div className="mt-3 flex gap-2">
+          <input
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            maxLength={40}
+            placeholder="Name, e.g. Work laptop"
+            className="min-w-0 flex-1 rounded border border-line bg-bg px-3 py-1.5 text-sm text-ink outline-none focus:border-accent"
+          />
+          <button
+            onClick={create}
+            disabled={busy}
+            className="shrink-0 rounded bg-accent px-3 py-1.5 text-xs font-medium text-bg hover:bg-accent-strong disabled:opacity-50"
+          >
+            Create code
+          </button>
+        </div>
+      </details>
     </div>
   );
 }

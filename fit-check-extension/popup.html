@@ -12,15 +12,14 @@
     </header>
 
     <section id="connect-view" class="view hidden">
-      <p class="lead">Connect this extension to your Mind the Fit account.</p>
-      <ol class="steps">
-        <li>Open <strong>mindthefit.com</strong> → Settings → Connections</li>
-        <li>Name it (e.g. "Chrome") and click "Create code"</li>
-        <li>Paste it below</li>
-      </ol>
-      <input id="token-input" type="text" placeholder="Paste your connection code" />
-      <button id="connect-btn" class="btn-primary">Connect</button>
-      <p id="connect-error" class="error hidden"></p>
+      <p class="lead">Sign in once to check fits against your measurements.</p>
+      <button id="signin-btn" class="btn-primary">Sign in to connect</button>
+      <details class="manual-code">
+        <summary>Have a connection code instead?</summary>
+        <input id="token-input" type="text" placeholder="Paste your connection code" />
+        <button id="connect-btn" class="btn-secondary">Connect with code</button>
+        <p id="connect-error" class="error hidden"></p>
+      </details>
     </section>
 
     <section id="main-view" class="view hidden">
@@ -32,7 +31,7 @@
 
       <p id="main-error" class="error hidden"></p>
 
-      <button id="disconnect-btn" class="link-muted disconnect">Disconnect</button>
+      <button id="disconnect-btn" class="link-muted disconnect">Sign out</button>
     </section>
 
     <section id="loading-view" class="view">

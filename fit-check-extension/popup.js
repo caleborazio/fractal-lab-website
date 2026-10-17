@@ -40,6 +40,18 @@ const tokenInput = document.getElementById("token-input");
 const connectBtn = document.getElementById("connect-btn");
 const connectError = document.getElementById("connect-error");
 
+// The connect page on mindthefit.com hands the code to connect.js, which
+// saves it -- this popup closes when the tab opens, so the next click on the
+// toolbar icon finds the extension connected.
+document.getElementById("signin-btn").addEventListener("click", () => {
+  chrome.tabs.create({ url: `${API_BASE}/connect/extension` });
+  window.close();
+});
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === "local" && changes[TOKEN_KEY]) showView(changes[TOKEN_KEY].newValue ? "main" : "connect");
+});
+
 connectBtn.addEventListener("click", async () => {
   const token = tokenInput.value.trim();
   connectError.classList.add("hidden");
@@ -53,6 +65,14 @@ connectBtn.addEventListener("click", async () => {
 });
 
 document.getElementById("disconnect-btn").addEventListener("click", async () => {
+  const { [TOKEN_KEY]: token } = await chrome.storage.local.get(TOKEN_KEY);
+  // Revoke it on the server too, so it doesn't linger in Settings → Connections.
+  if (token) {
+    fetch(`${API_BASE}/api/extension/disconnect`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    }).catch(() => {});
+  }
   await chrome.storage.local.remove(TOKEN_KEY);
   tokenInput.value = "";
   showView("connect");

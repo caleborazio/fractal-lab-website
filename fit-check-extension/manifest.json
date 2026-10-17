@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Mind the Fit",
   "description": "Check if a secondhand or vintage listing will fit you, right from the page you're on.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
@@ -18,6 +18,24 @@
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-  "permissions": ["activeTab", "scripting", "storage"],
-  "host_permissions": ["https://mindthefit.com/*", "https://www.mindthefit.com/*"]
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://mindthefit.com/*",
+    "https://www.mindthefit.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.mindthefit.com/connect/extension*",
+        "https://mindthefit.com/connect/extension*"
+      ],
+      "js": [
+        "connect.js"
+      ]
+    }
+  ]
 }

@@ -87,11 +87,19 @@ body {
   line-height: 1.4;
 }
 
-.steps {
-  margin: 0 0 12px;
-  padding-left: 18px;
-  color: var(--ink-soft);
-  line-height: 1.6;
+.manual-code {
+  margin-top: 14px;
+  color: var(--ink-faint);
+}
+
+.manual-code summary {
+  cursor: pointer;
+  margin-bottom: 10px;
+  font-size: 12px;
+}
+
+.manual-code summary:hover {
+  color: var(--ink);
 }
 
 input[type="text"] {
@@ -124,6 +132,22 @@ input[type="text"]:focus {
 
 .btn-primary:hover {
   background: var(--accent-strong);
+}
+
+.btn-secondary {
+  width: 100%;
+  padding: 8px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .btn-primary:disabled {

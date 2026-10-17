@@ -14,7 +14,15 @@ interface Profile {
 
 const EMPTY_DRAFT = { bust: "", waist: "", hip: "", height: "", inseam: "", shoulderToInseam: "" };
 
-export function MeasurementsForm() {
+export function MeasurementsForm({
+  onSaved,
+  saveLabel = "Save",
+}: {
+  /** Runs after a successful save -- e.g. the connect page moves on. */
+  onSaved?: () => void;
+  saveLabel?: string;
+} = {}) {
+  const [loaded, setLoaded] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [draft, setDraft] = useState(EMPTY_DRAFT);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +44,10 @@ export function MeasurementsForm() {
               data.profile.shoulderToInseam != null ? String(data.profile.shoulderToInseam) : "",
           });
         }
-      });
+      })
+      .catch(() => {})
+      // No profile yet (a brand-new account) shows the empty form to fill in.
+      .finally(() => setLoaded(true));
   }, []);
 
   async function save() {
@@ -64,6 +75,7 @@ export function MeasurementsForm() {
       const data = await res.json();
       setProfile(data.profile);
       setSaved(true);
+      onSaved?.();
     } catch {
       setError("Couldn't save that — try again.");
     }
@@ -74,7 +86,7 @@ export function MeasurementsForm() {
     setSaved(false);
   }
 
-  if (!profile) return <p className="text-ink-soft">Loading…</p>;
+  if (!loaded) return <p className="text-ink-soft">Loading…</p>;
 
   return (
     <div>
@@ -157,9 +169,9 @@ export function MeasurementsForm() {
           onClick={save}
           className="rounded bg-accent px-5 py-2.5 font-medium text-bg hover:bg-accent-strong"
         >
-          Save
+          {saveLabel}
         </button>
-        {saved && <span className="text-sm text-pine">Saved</span>}
+        {saved && profile && !onSaved && <span className="text-sm text-pine">Saved</span>}
       </div>
     </div>
   );
