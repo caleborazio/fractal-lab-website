@@ -330,7 +330,18 @@ async function extractPageData() {
     });
   }
 
-  const text = (document.body.innerText || "").trim().slice(0, 8000);
+  // ThredUp keeps the listing's measurements in its page data, which is
+  // there even when the collapsed "Item details" text isn't -- a real phone
+  // check came back empty for a listing that said "Measured at 36" bust".
+  // Put it first so the length cap below can't cut it either.
+  let facts = "";
+  try {
+    const id = (location.pathname.match(/\d{6,}/g) || []).pop();
+    const state = JSON.parse(document.getElementById("data-apollo").textContent);
+    const m = (state[`Item:{"itemNumber":${id}}`] || {}).measurements;
+    if (m && m.display) facts = `Measurements from the listing's product data: ${m.display}\n\n`;
+  } catch (e) {}
+  const text = (facts + (document.body.innerText || "")).trim().slice(0, 8000);
 
   // Real-world check against a ThredUp listing showed two things naturalWidth
   // sorting alone gets wrong: (1) a page can have a small on-screen image

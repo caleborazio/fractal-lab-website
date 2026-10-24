@@ -38,7 +38,7 @@ function withTimeoutSignal(ms: number) {
  */
 export function upgradeImageUrl(url: string): string {
   return url.replace(
-    /(cf-assets-thredup\.thredup\.com\/assets\/\d+\/)(?:thumb|store_grid|small|medium|large|xlarge)\.jpg/i,
+    /((?:cf-assets-thredup|tup-images)\.thredup\.com\/assets\/\d+\/)(?:thumb|store_grid|small|medium|large|xlarge)\.jpg/i,
     "$1retina.jpg"
   );
 }
