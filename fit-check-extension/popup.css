@@ -113,37 +113,6 @@ a {
   color: var(--ink-soft);
 }
 
-.manual-code {
-  margin-top: 14px;
-  color: var(--ink-faint);
-}
-
-.manual-code summary {
-  cursor: pointer;
-  margin-bottom: 10px;
-  font-size: 13px;
-}
-
-.manual-code summary:hover {
-  color: var(--ink);
-}
-
-input[type="text"] {
-  width: 100%;
-  padding: 9px 10px;
-  margin-bottom: 10px;
-  border: 1px solid var(--line-strong);
-  background: var(--bg);
-  color: var(--ink);
-  font-family: var(--text);
-  font-size: 14px;
-}
-
-input[type="text"]:focus {
-  outline: none;
-  border-color: var(--ink);
-}
-
 .btn-primary,
 .btn-secondary {
   width: 100%;

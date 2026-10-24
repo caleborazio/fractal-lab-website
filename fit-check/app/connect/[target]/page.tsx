@@ -8,8 +8,9 @@ import { ConnectHandoff, type ConnectTarget } from "@/components/ConnectHandoff"
 const TARGETS: readonly ConnectTarget[] = ["app", "extension"];
 
 // Where the iPhone app and browser extension send people to sign in. After
-// sign-in (and measurements, for a brand-new account) one tap creates a
-// connection code and hands it straight back -- nothing to copy or paste.
+// sign-in (and measurements, for a brand-new account) it creates a
+// connection code and hands it straight back on its own -- nothing to tap,
+// copy or paste.
 export default async function ConnectPage({ params }: { params: Promise<{ target: string }> }) {
   const { target } = await params;
   if (!TARGETS.includes(target as ConnectTarget)) notFound();

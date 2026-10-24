@@ -46,13 +46,10 @@ document.getElementById("open-app").addEventListener("click", (e) => {
 
 // --- Connect flow -----------------------------------------------------
 
-const tokenInput = document.getElementById("token-input");
-const connectBtn = document.getElementById("connect-btn");
-const connectError = document.getElementById("connect-error");
-
-// The connect page on mindthefit.com hands the code to connect.js, which
-// saves it -- this popup closes when the tab opens, so the next click on the
-// toolbar icon finds the extension connected.
+// The connect page on mindthefit.com connects on its own once you're signed
+// in and hands the code to connect.js, which saves it -- this popup closes
+// when the tab opens, so the next click on the toolbar icon finds the
+// extension connected.
 document.getElementById("signin-btn").addEventListener("click", () => {
   ext.tabs.create({ url: `${API_BASE}/connect/extension` });
   window.close();
@@ -73,17 +70,6 @@ ext.storage.onChanged.addListener((changes, area) => {
   }
 });
 
-connectBtn.addEventListener("click", async () => {
-  const code = tokenInput.value.trim();
-  connectError.classList.add("hidden");
-  if (!code) {
-    connectError.textContent = "Paste the code from Settings first.";
-    connectError.classList.remove("hidden");
-    return;
-  }
-  await ext.storage.local.set({ [TOKEN_KEY]: code });
-});
-
 document.getElementById("disconnect-btn").addEventListener("click", async () => {
   // Revoke it on the server too, so it doesn't linger in Settings → Connections.
   if (token) {
@@ -92,7 +78,6 @@ document.getElementById("disconnect-btn").addEventListener("click", async () => 
       headers: { Authorization: `Bearer ${token}` },
     }).catch(() => {});
   }
-  tokenInput.value = "";
   if (IN_SAFARI) await tellApp({ type: "signOut" });
   await ext.storage.local.remove(TOKEN_KEY);
 });

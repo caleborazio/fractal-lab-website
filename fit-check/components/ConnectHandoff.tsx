@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { MeasurementsForm } from "@/components/MeasurementsForm";
 
 export type ConnectTarget = "app" | "extension";
@@ -38,6 +38,17 @@ function notAnsweringHint(): string {
   return "The Mind the Fit extension isn’t answering on this page. Make sure it’s installed and turned on, then reload.";
 }
 
+async function createConnection(label: string): Promise<{ code: string; id: string }> {
+  const res = await fetch("/api/connections", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ label }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.code) throw new Error(data.error ?? "Couldn't connect. Try again.");
+  return { code: data.code, id: data.connection.id };
+}
+
 export function ConnectHandoff({
   target,
   email,
@@ -52,7 +63,11 @@ export function ConnectHandoff({
   const [returnUrl, setReturnUrl] = useState<string | null>(null);
   // null = still listening; false = no extension answered on this page.
   const [extensionFound, setExtensionFound] = useState<boolean | null>(target === "app" ? true : null);
+  // The extension says so when it's already signed in -- then visiting this
+  // page again shouldn't quietly make another connection.
+  const [alreadyConnected, setAlreadyConnected] = useState(false);
   const ackRef = useRef<(() => void) | null>(null);
+  const autoConnected = useRef(false);
 
   useEffect(() => {
     if (target !== "extension") return;
@@ -60,7 +75,10 @@ export function ConnectHandoff({
       if (event.source !== window || event.origin !== window.location.origin) return;
       const data = event.data;
       if (!data || data.source !== FROM_EXTENSION) return;
-      if (data.type === "ready") setExtensionFound(true);
+      if (data.type === "ready") {
+        setExtensionFound(true);
+        if (data.connected === true) setAlreadyConnected(true);
+      }
       if (data.type === "connected") ackRef.current?.();
     }
     window.addEventListener("message", onMessage);
@@ -74,18 +92,7 @@ export function ConnectHandoff({
     };
   }, [target]);
 
-  async function createConnection(label: string): Promise<{ code: string; id: string }> {
-    const res = await fetch("/api/connections", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ label }),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || !data.code) throw new Error(data.error ?? "Couldn't connect. Try again.");
-    return { code: data.code, id: data.connection.id };
-  }
-
-  async function connect() {
+  const connect = useCallback(async () => {
     setPhase("working");
     setError(null);
     try {
@@ -118,7 +125,18 @@ export function ConnectHandoff({
       setError(err instanceof Error ? err.message : "Couldn't connect. Try again.");
       setPhase("error");
     }
-  }
+  }, [target]);
+
+  // Landing here is already the request to connect -- from the app's sign-in
+  // sheet or the extension's Sign in button -- so connect as soon as the
+  // extension answers (or right after measurements, for a new account)
+  // instead of waiting for another tap. Once only: a failure leaves the
+  // Connect button for a retry.
+  useEffect(() => {
+    if (phase !== "ready" || !extensionFound || alreadyConnected || autoConnected.current) return;
+    autoConnected.current = true;
+    void connect();
+  }, [phase, extensionFound, alreadyConnected, connect]);
 
   const what = target === "app" ? "the Mind the Fit iPhone app" : "this browser's Mind the Fit extension";
 
@@ -180,6 +198,12 @@ export function ConnectHandoff({
         // Only reached client-side (after the wait timer), so reading the user agent is safe.
         <p className="mb-4 text-sm text-bad">{notAnsweringHint()}</p>
       ) : null}
+      {alreadyConnected && phase === "ready" ? (
+        <p className="mb-4 text-sm text-ink-soft">
+          This browser’s Mind the Fit extension is already signed in. Click its icon on any listing
+          to check the fit.
+        </p>
+      ) : null}
       {error && <p className="mb-4 text-sm text-bad">{error}</p>}
 
       <button
@@ -187,7 +211,7 @@ export function ConnectHandoff({
         disabled={phase === "working" || !extensionFound}
         className="w-full bg-accent px-6 py-4 font-mono text-sm font-semibold uppercase tracking-wider text-bg hover:bg-accent-strong disabled:opacity-50"
       >
-        {phase === "working" ? "Connecting…" : "Connect"}
+        {phase === "working" ? "Connecting…" : alreadyConnected ? "Connect again" : "Connect"}
       </button>
     </div>
   );

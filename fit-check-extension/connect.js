@@ -6,8 +6,15 @@ const FROM_EXTENSION = "mind-the-fit-extension";
 const TOKEN_KEY = "mtf_token";
 const ext = globalThis.browser ?? globalThis.chrome;
 
-function reply(type) {
-  window.postMessage({ source: FROM_EXTENSION, type }, location.origin);
+function reply(type, extra = {}) {
+  window.postMessage({ source: FROM_EXTENSION, type, ...extra }, location.origin);
+}
+
+// "ready" also says whether this browser is already signed in, so the page
+// doesn't make another connection just because it was opened again.
+async function announce() {
+  const { [TOKEN_KEY]: token } = await ext.storage.local.get(TOKEN_KEY);
+  reply("ready", { connected: !!token });
 }
 
 window.addEventListener("message", async (event) => {
@@ -16,11 +23,11 @@ window.addEventListener("message", async (event) => {
   const data = event.data;
   if (!data || data.source !== FROM_SITE) return;
 
-  if (data.type === "hello") reply("ready");
+  if (data.type === "hello") announce();
   if (data.type === "connect" && typeof data.code === "string" && data.code.startsWith("mtf_")) {
     await ext.storage.local.set({ [TOKEN_KEY]: data.code });
     reply("connected");
   }
 });
 
-reply("ready");
+announce();
