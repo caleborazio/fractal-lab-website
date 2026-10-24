@@ -209,6 +209,17 @@ export function CheckHistory() {
                   )}
                 </div>
 
+                {check.sourceUrl?.startsWith("http") && (
+                  <a
+                    href={check.sourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="self-start border border-line-strong px-4 py-2 text-sm hover:border-ink"
+                  >
+                    Open the listing ↗
+                  </a>
+                )}
+
                 <div className="flex justify-end">
                   {confirmDeleteId === check.id ? (
                     <button
