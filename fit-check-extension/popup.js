@@ -532,11 +532,32 @@ async function waitForUnfinishedCheck(startedAt) {
   throw new Error("That check didn't finish.");
 }
 
+// Our server reads these sites itself, with readers that get every photo at
+// full size plus the comment thread. The page here only has thumbnails for
+// most photos -- a Poshmark listing's tape-measure shots were photos 10-15 of
+// 16, past what this popup captures. Same split as the iPhone share extension.
+function serverCanRead(url) {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    return host.endsWith("poshmark.com") || host === "posh.mk" || host.includes("vinted.");
+  } catch {
+    return false;
+  }
+}
+
 async function runCheck() {
   resetMain();
   const key = pendingKey(currentTab.url);
   await ext.storage.session.set({ [key]: Date.now() });
   try {
+    if (serverCanRead(currentTab.url)) {
+      setStatus("Checking the fit…");
+      const data = await api("/api/extension/check-link", { url: currentTab.url });
+      setStatus(null);
+      renderResult(data);
+      return;
+    }
+
     setStatus("Reading the page…");
     const page = await readPage(extractPageData);
     if (!page.text && page.images.length === 0 && page.failedImageUrls.length === 0) {
