@@ -42,6 +42,17 @@ export default async function SettingsPage() {
       </p>
       <MeasurementsForm />
 
+      <h2 className="mb-3 mt-12 text-2xl">Use it everywhere</h2>
+      <p className="mb-4 max-w-prose text-sm text-ink-soft">
+        Add Mind the Fit to Chrome, Safari or your iPhone to check listings right where you shop.
+      </p>
+      <Link
+        href="/get"
+        className="self-start border border-line-strong px-4 py-2 text-sm hover:border-ink"
+      >
+        Get the extension and app →
+      </Link>
+
       <h2 className="mb-3 mt-12 text-2xl">Connections</h2>
       <ConnectionsManager />
 
