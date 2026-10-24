@@ -142,7 +142,7 @@ function timeAgo(iso) {
 function summarize(verdicts) {
   const withData = verdicts.filter((v) => v.reading !== "no_data");
   if (withData.length === 0) {
-    return { headline: "Not enough measurements yet to say how this will fit.", tone: "neutral" };
+    return { headline: "No bust, waist or hip measurements in this listing.", tone: "neutral" };
   }
   const tight = withData.filter((v) => v.reading === "tight").map((v) => v.dimension);
   const loose = withData.filter((v) => v.reading === "loose").map((v) => v.dimension);
@@ -225,6 +225,13 @@ function renderResult(data, { checkedAt } = {}) {
     })
     .join("");
 
+  // Numbers the listing gave that aren't scored against the body, shown as
+  // stated -- so a check that only found a length doesn't look empty.
+  const listed = [["Length", result.length], ["Inseam", result.inseam], ["Rise", result.rise]]
+    .filter(([, value]) => value != null)
+    .map(([label, value]) => `<div class="dim"><p class="dim-detail"><span class="dim-name">${label}</span> ${esc(value)}″</p></div>`)
+    .join("");
+
   const legend = verdict.some((v) => v.garment != null)
     ? `<div class="legend"><span><i class="key-garment"></i>garment</span><span><i class="key-you"></i>you</span></div>`
     : "";
@@ -261,7 +268,7 @@ function renderResult(data, { checkedAt } = {}) {
       ${stamp ? `<div class="stamp tone-${stamp.tone}"><span>${stamp.label}</span></div>` : ""}
       <p class="tag-title">${title || "This listing"}</p>
       <h1 class="tag-headline">${esc(overall.headline)}</h1>
-      <div class="dims">${rows}</div>
+      <div class="dims">${rows}${listed}</div>
       ${legend}
     </section>
     ${photoNote}

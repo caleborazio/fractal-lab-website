@@ -13,7 +13,7 @@ import type { ExtractionResult } from "@/lib/gemini";
 import { FREE_CHECKS_PER_MONTH } from "@/lib/plan";
 import { MeasurementGuide } from "@/components/MeasurementGuide";
 import { Lightbox } from "@/components/Lightbox";
-import { FitTag, LandingNote } from "@/components/FitTag";
+import { FitTag, LandingNote, ListedMeasurement } from "@/components/FitTag";
 
 type Step = "loading" | "profile" | "submit" | "extracting" | "result";
 
@@ -483,12 +483,9 @@ export function FitCheckApp() {
               verdict={verdict}
               overall={overall}
             >
-              {isPants && extraction.rise != null && (
-                <p className="mt-4 text-sm text-ink-soft">
-                  <span className="font-mono text-xs font-semibold uppercase tracking-wide text-ink">Rise</span>{" "}
-                  {extraction.rise}″
-                </p>
-              )}
+              <ListedMeasurement label="Length" value={extraction.length} />
+              <ListedMeasurement label="Inseam" value={extraction.inseam} />
+              <ListedMeasurement label="Rise" value={isPants ? extraction.rise : null} />
             </FitTag>
 
             {landing ? (

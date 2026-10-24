@@ -69,7 +69,7 @@ const DIMENSION_LABEL: Record<Dimension, string> = { bust: "bust", waist: "waist
 export function summarizeVerdict(verdicts: DimensionVerdict[]): OverallVerdict {
   const withData = verdicts.filter((v) => v.reading !== "no_data");
   if (withData.length === 0) {
-    return { headline: "Not enough measurements yet to say how this will fit.", tone: "neutral" };
+    return { headline: "No bust, waist or hip measurements in this listing.", tone: "neutral" };
   }
 
   const tightDims = withData.filter((v) => v.reading === "tight").map((v) => DIMENSION_LABEL[v.dimension]);

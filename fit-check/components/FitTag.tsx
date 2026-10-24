@@ -59,6 +59,18 @@ function Bars({ garment, body }: { garment: number; body: number }) {
   );
 }
 
+/** A number the listing gave that isn't scored against the body (length,
+ * inseam, rise) -- shown as stated, so a check that only found a length
+ * doesn't look like it found nothing. */
+export function ListedMeasurement({ label, value }: { label: string; value: number | null | undefined }) {
+  if (value == null) return null;
+  return (
+    <p className="mt-4 text-sm text-ink-soft">
+      <span className="font-mono text-xs font-semibold uppercase tracking-wide text-ink">{label}</span> {value}″
+    </p>
+  );
+}
+
 export function FitTag({
   title,
   verdict,

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { summarizeVerdict, isPantsLike, type DimensionVerdict, type LandingEstimate } from "@/lib/fit";
 import type { ExtractionResult } from "@/lib/gemini";
 import { Lightbox } from "@/components/Lightbox";
-import { FitTag, LandingNote } from "@/components/FitTag";
+import { FitTag, LandingNote, ListedMeasurement } from "@/components/FitTag";
 
 const SITE_NAMES: [RegExp, string][] = [
   [/poshmark|posh\.mk/, "Poshmark"],
@@ -36,6 +36,7 @@ interface SavedCheck {
   images: string[] | null;
   verdict: DimensionVerdict[] | null;
   landing: LandingEstimate | null;
+  length: number | null;
   rise: number | null;
   inseam: number | null;
   rawExtraction: ExtractionResult | null;
@@ -152,12 +153,9 @@ export function CheckHistory() {
                     verdict={check.verdict}
                     overall={overall}
                   >
-                    {check.rise != null && isPantsLike(check.garmentType) && (
-                      <p className="mt-4 text-sm text-ink-soft">
-                        <span className="font-mono text-xs font-semibold uppercase tracking-wide text-ink">Rise</span>{" "}
-                        {check.rise}″
-                      </p>
-                    )}
+                    <ListedMeasurement label="Length" value={check.length} />
+                    <ListedMeasurement label="Inseam" value={check.inseam} />
+                    <ListedMeasurement label="Rise" value={isPantsLike(check.garmentType) ? check.rise : null} />
                   </FitTag>
                 )}
 
