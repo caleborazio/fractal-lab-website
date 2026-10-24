@@ -25,6 +25,19 @@ function extensionLabel(): string {
   return "Chrome extension";
 }
 
+// Safari keeps an installed, turned-on extension off each website until the
+// person allows it there -- the usual reason it isn't answering in Safari.
+function notAnsweringHint(): string {
+  const label = extensionLabel();
+  if (label === "Safari on iPhone") {
+    return "Safari hasn’t let the Mind the Fit extension onto this page yet. Tap the page menu at the left of the address bar, tap Mind the Fit, choose Always Allow on This Website, then reload.";
+  }
+  if (label === "Safari extension") {
+    return "Safari hasn’t let the Mind the Fit extension onto this page yet. Click the Mind the Fit icon in Safari’s toolbar, choose Always Allow on This Website, then reload.";
+  }
+  return "The Mind the Fit extension isn’t answering on this page. Make sure it’s installed and turned on, then reload.";
+}
+
 export function ConnectHandoff({
   target,
   email,
@@ -164,10 +177,8 @@ export function ConnectHandoff({
       </p>
 
       {extensionFound === false ? (
-        <p className="mb-4 text-sm text-bad">
-          The Mind the Fit extension isn’t answering on this page. Make sure it’s installed
-          and turned on, then reload.
-        </p>
+        // Only reached client-side (after the wait timer), so reading the user agent is safe.
+        <p className="mb-4 text-sm text-bad">{notAnsweringHint()}</p>
       ) : null}
       {error && <p className="mb-4 text-sm text-bad">{error}</p>}
 
