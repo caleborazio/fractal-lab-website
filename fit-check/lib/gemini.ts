@@ -60,8 +60,8 @@ const PROMPT = `You are reading photo(s) and/or text from a single secondhand or
 
 MEASUREMENT CONVENTIONS -- reason about this carefully, it's the part people get wrong:
 Garments are almost always measured FLAT (laid on a table, front layer over back layer), not wrapped around a body. A single stated number for bust/chest, waist, or hip is usually HALF the actual circumference. "Pit to pit" or "armpit to armpit" means side-to-side across the flat garment -- that is HALF the way around, not the full bust measurement.
-Signs a number is FLAT/HALF: words like "pit to pit," "flat," "laid flat," "side to side," "armpit to armpit"; or the number itself is implausibly small for an adult body measured around (roughly under 22in for adult bust/waist/hip almost always means flat/half, not full circumference).
-Signs a number is FULL CIRCUMFERENCE: words like "circumference," "around," "wrap," "full"; or the number falls in a plausible full-body range (roughly 24-50in for adult bust/waist/hip).
+Signs a number is FLAT/HALF: words like "pit to pit," "flat," "laid flat," "side to side," "armpit to armpit," "chest width," "width," "across"; or the number itself is implausibly small for an adult body measured around (roughly under 22in / 56cm for adult bust/waist/hip almost always means flat/half, not full circumference).
+Signs a number is FULL CIRCUMFERENCE: words like "circumference," "around," "wrap," "full"; or the number falls in a plausible full-body range (roughly 24-50in / 61-127cm for adult bust/waist/hip).
 If a photo shows a tape measure or ruler laid straight across a single flat layer of the garment (not wrapped around it), that supports flat/half too.
 If you genuinely cannot tell which convention was used, set convention to "unknown" rather than guessing -- do not silently assume a number is doubled or not. Report the number exactly as stated either way; conversion happens downstream, not in your answer.
 
@@ -88,7 +88,7 @@ Return:
 - bust, waist, hip: the RAW number exactly as stated (do not pre-double it), each with its own convention judgment (bustConvention, waistConvention, hipConvention)
 - length: garment length top-to-hem if stated (no convention ambiguity for this one)
 - rise, inseam: for pants/jeans/shorts only, if stated (see above); null for other garment types or if not given
-- unit: "in" or "cm" -- whichever unit the source used (assume "in" if ambiguous)
+- unit: "in" or "cm" -- the unit of the numbers you report. Use ONE unit for all of them. Listings often give both (e.g. "36 cm (14.17 in)"): whenever inches are stated, report the inch numbers with "in". Use "cm" only when the measurements are given in centimeters alone, and report them exactly as stated -- never convert units yourself (assume "in" if ambiguous)
 - fitNotes: a brief note on stretch/structure/fit-relevant language found in the text, else null
 - readFrom: a short quote or description of exactly where you read each number from (e.g. "tag says Bust 36in, Waist 30in" or "seller's description: '48 inches long, 16 inches bust (flexible)'" or "seller's comment reply: 'Pit: 15.5in, waist: 13in'" or "measurement diagram overlaid on photo 2")
 - measuredFromPhoto: true if the bust/waist/hip/length numbers you're reporting came primarily from something you read IN A PHOTO (a diagram, tag, or handwritten card) rather than typed listing text -- false if they came from the listing text/description/comments instead
@@ -96,6 +96,26 @@ Return:
 - summary: 2-4 plain-English sentences a shopper can quickly sanity-check -- what you found, which source each came from (a specific photo, the listing text, a comment, a tag), call out explicitly any number you judged to be a flat/half measurement so they know it'll be doubled for comparison, and flag any inconsistency you noticed between sources
 
 Respond with JSON only, matching the schema.`;
+
+const CM_PER_INCH = 2.54;
+const LENGTH_FIELDS = ["bust", "waist", "hip", "length", "rise", "inseam"] as const;
+
+/**
+ * Everything downstream -- the fit math, the person's profile, every screen
+ * -- is in inches, so a read in centimeters is converted here, in code,
+ * rather than trusting the model's arithmetic. A coat listed as "Chest Width
+ * (Pit-to-Pit): 36 cm" was otherwise scored as a 72-inch chest. Also applied
+ * to older saved reads when they're re-scored.
+ */
+export function inInches(read: ExtractionResult): ExtractionResult {
+  if (read.unit !== "cm") return read;
+  const converted = { ...read, unit: "in" as const };
+  for (const field of LENGTH_FIELDS) {
+    const value = read[field];
+    if (value != null) converted[field] = Math.round((value / CM_PER_INCH) * 100) / 100;
+  }
+  return converted;
+}
 
 let client: GoogleGenerativeAI | null = null;
 
@@ -139,7 +159,7 @@ export async function extractMeasurements(
 
   const result = await model.generateContent(parts);
   const text = result.response.text();
-  const parsed = JSON.parse(text) as ExtractionResult;
+  const parsed = inInches(JSON.parse(text) as ExtractionResult);
 
   // Sanity bounds -- a misread digit shouldn't be trusted silently.
   // Range is wide on purpose since raw values may legitimately be flat/half (small) or full circumference (larger).

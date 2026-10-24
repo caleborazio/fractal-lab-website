@@ -1,6 +1,6 @@
 import type { Profile } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { extractMeasurements, type ExtractionResult } from "@/lib/gemini";
+import { extractMeasurements, inInches, type ExtractionResult } from "@/lib/gemini";
 import {
   computeVerdict,
   estimateGarmentLanding,
@@ -113,7 +113,7 @@ export async function findEarlierCheck(
   const match = checks.find((c) => c.rawExtraction && c.sourceUrl && listingKey(c.sourceUrl) === key);
   if (!match) return null;
 
-  const result = match.rawExtraction as unknown as ExtractionResult;
+  const result = inInches(match.rawExtraction as unknown as ExtractionResult);
   const body = bodyFromProfile(profile);
   return {
     result,
