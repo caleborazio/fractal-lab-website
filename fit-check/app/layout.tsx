@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { clerkEnabled } from "@/lib/auth";
+import { RefCapture } from "@/components/RefCapture";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -26,7 +27,10 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <RefCapture />
+        {children}
+      </body>
     </html>
   );
   return clerkEnabled ? <ClerkProvider>{inner}</ClerkProvider> : inner;

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PLUS_PRICE_LABEL, FREE_CHECKS_PER_MONTH } from "@/lib/plan";
 import { Mark, Wordmark } from "@/components/Brand";
+import { SiteFooter } from "@/components/SiteFooter";
 
 const STEPS = [
   {
@@ -129,7 +130,8 @@ export default function LandingPage() {
         {/* Hero */}
         <section className="flex flex-wrap items-center gap-12 py-14">
           <div className="flex min-w-0 flex-[1_1_420px] flex-col gap-6">
-            <p className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-faint">
+            <p className="flex flex-wrap items-center gap-3 font-mono text-xs font-semibold uppercase tracking-wider text-ink-faint">
+              <span className="border border-ink px-2 py-1 text-ink">Early access</span>
               Secondhand &amp; vintage, measured
             </p>
             <h1 className="text-5xl leading-[1.02] sm:text-[68px]">
@@ -232,14 +234,7 @@ export default function LandingPage() {
         </section>
       </main>
 
-      <footer className="mx-auto max-w-6xl border-t border-line px-6 py-8 text-center">
-        <a
-          href="https://fractallab.co"
-          className="font-mono text-xs font-semibold uppercase tracking-wide text-ink-faint hover:text-ink"
-        >
-          A Fractal Lab product
-        </a>
-      </footer>
+      <SiteFooter className="mx-auto max-w-6xl" />
     </div>
   );
 }

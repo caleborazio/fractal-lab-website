@@ -438,6 +438,11 @@ async function api(path, body) {
     showView("connect");
     throw new SignedOut();
   }
+  // In Safari this ships inside the iPhone and Mac apps, and App Review
+  // doesn't allow the server's "upgrade on the website" pointer there.
+  if (res.status === 402 && IN_SAFARI) {
+    throw new Error("You’ve used this month’s free checks. They reset at the start of next month.");
+  }
   if (!res.ok) throw new Error(data.error || "Couldn't check this listing.");
   return data;
 }

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getEmailForUserId } from "@/lib/auth";
 import { getRequestUserId, isAppRequest } from "@/lib/extensionAuth";
 import { checkUsage } from "@/lib/usage";
+import { cleanRef, REF_COOKIE } from "@/lib/referral";
 
 export async function GET(req: NextRequest) {
   const userId = await getRequestUserId(req);
@@ -42,10 +43,12 @@ export async function POST(req: NextRequest) {
     inseam: inseam ?? null,
     shoulderToInseam: shoulderToInseam ?? null,
   };
+  // A share link's ?ref= cookie is credited once, when the profile is created.
+  const referredBy = cleanRef(req.cookies.get(REF_COOKIE)?.value);
   const profile = await prisma.profile.upsert({
     where: { id: userId },
     update: { bust, waist, hip, ...optionalFields },
-    create: { id: userId, bust, waist, hip, ...optionalFields },
+    create: { id: userId, bust, waist, hip, ...optionalFields, referredBy },
   });
 
   return NextResponse.json({ profile });

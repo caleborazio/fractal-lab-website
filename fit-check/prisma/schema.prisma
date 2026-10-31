@@ -28,6 +28,9 @@ model Profile {
   // otherwise it's stale from a prior month and reads as 0 (see lib/usage.ts).
   checksUsedThisMonth Int        @default(0)
   usageMonth          String     @default("")
+  // The ?ref= handle of the share link that first brought this person here,
+  // if any (lib/referral.ts) -- for counting sign-ups per influencer.
+  referredBy          String?
   createdAt           DateTime   @default(now())
   updatedAt           DateTime   @updatedAt
   checks              FitCheck[]

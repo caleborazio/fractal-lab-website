@@ -6,6 +6,8 @@ import { AppHeader } from "@/components/AppHeader";
 import { AccountActions } from "@/components/AccountActions";
 import { MeasurementsForm } from "@/components/MeasurementsForm";
 import { ConnectionsManager } from "@/components/ConnectionsManager";
+import { DeleteAccount } from "@/components/DeleteAccount";
+import { FEEDBACK_MAILTO } from "@/lib/site";
 import { FREE_CHECKS_PER_MONTH } from "@/lib/plan";
 
 export default async function SettingsPage() {
@@ -55,6 +57,20 @@ export default async function SettingsPage() {
 
       <h2 className="mb-3 mt-12 text-2xl">Connections</h2>
       <ConnectionsManager />
+
+      <h2 className="mb-3 mt-12 text-2xl">Feedback</h2>
+      <p className="mb-4 max-w-prose text-sm text-ink-soft">
+        Mind the Fit is in early access — tell us what worked, what didn’t, and any listing it misread.
+      </p>
+      <a
+        href={FEEDBACK_MAILTO}
+        className="self-start border border-line-strong px-4 py-2 text-sm hover:border-ink"
+      >
+        Send feedback
+      </a>
+
+      <h2 className="mb-3 mt-12 text-2xl">Delete account</h2>
+      <DeleteAccount />
 
       <Link
         href="/"

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { headers } from "next/headers";
-import { Mark, Wordmark } from "@/components/Brand";
+import { PublicPage } from "@/components/PublicPage";
 import { STORE_LINKS, installTargetFor, type InstallTarget } from "@/lib/install";
 
 export const metadata: Metadata = {
@@ -60,17 +59,13 @@ export default async function GetPage() {
   const order = detected ? [detected, ...ORDER.filter((t) => t !== detected)] : ORDER;
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-xl flex-col px-5 py-8">
-      <header className="mb-10 border-b border-line pb-4">
-        <Link href="/" aria-label="Mind the Fit home" className="flex items-center gap-2.5">
-          <Mark size={28} />
-          <Wordmark className="text-[22px]" />
-        </Link>
-      </header>
-
+    <PublicPage>
+      <p className="mb-3 font-mono text-xs font-semibold uppercase tracking-wider text-ink-faint">
+        Early access
+      </p>
       <h1 className="mb-3 text-4xl">Get Mind the Fit</h1>
       <p className="mb-10 max-w-prose text-sm text-ink-soft">
-        Check a listing&apos;s fit from wherever you shop. Sign in once on each — they all use the
+        Check a listing’s fit from wherever you shop. Sign in once on each — they all use the
         same account, measurements and history.
       </p>
 
@@ -118,10 +113,6 @@ export default async function GetPage() {
           );
         })}
       </div>
-
-      <Link href="/" className="mt-10 text-sm text-ink-faint underline hover:text-accent">
-        ← Back to mindthefit.com
-      </Link>
-    </main>
+    </PublicPage>
   );
 }
